@@ -1,0 +1,26 @@
+# .gitignore — files git should pretend don't exist.
+# Anything matched here will NOT be committed or pushed.
+
+# --- Python virtual environment (huge, machine-specific, never commit) ---
+venv/
+.venv/
+
+# --- Python's auto-generated cache (re-created on every run) ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Streamlit's local cache directory ---
+.streamlit/
+
+# --- macOS junk file Finder leaves behind in every folder ---
+.DS_Store
+
+# --- Editor / IDE settings (yours, not the project's) ---
+.vscode/
+.idea/
+*.swp
+
+# --- Secrets, in case we ever add an API key file later ---
+.env
+*.secret

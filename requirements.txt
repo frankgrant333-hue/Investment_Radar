@@ -1,0 +1,19 @@
+# Required libraries for Investment Radar
+#
+# How to read this file:
+#   `library>=X.Y`  means "install this library, version X.Y or newer".
+#   Streamlit Community Cloud installs from THIS FILE when it deploys
+#   the hosted (phone) version of the dashboard. We use lower-bound
+#   constraints (>=) so both your Mac and Streamlit Cloud get compatible
+#   modern versions.
+#
+# If a future yfinance update ever breaks things, replace `>=` with
+# `==` to pin exact versions to a known-working setup.
+#
+# How to install: with your venv activated, run:
+#     pip install -r requirements.txt
+
+pandas>=2.0,<3.0     # tables of data — the CSV becomes a pandas DataFrame
+numpy>=1.24          # arithmetic under pandas — pinned so pandas plays nice
+yfinance>=0.2.40     # free Yahoo Finance data — price history + fundamentals
+streamlit>=1.30      # turns this Python project into a web dashboard

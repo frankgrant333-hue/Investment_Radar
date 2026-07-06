@@ -1,0 +1,6 @@
+symbol,name,asset_type,sector,sub_sector,theme,description,source,date_added,notes
+NVDA,NVIDIA Corporation,stock,Technology,Semiconductors,"AI, Data Centers",Designs GPUs powering most AI training and inference workloads.,Patrick Boyle podcast,2026-05-22,Dominant in AI accelerators; valuation already rich.
+CEG,Constellation Energy Corp,stock,Utilities,Nuclear Power,"Nuclear Energy, AI",Largest US nuclear operator; supplies low-carbon baseload power to AI data centers.,All-In Podcast,2026-05-22,Beneficiary of AI power demand thesis.
+SMH,VanEck Semiconductor ETF,etf,Technology,Semiconductors,AI,Diversified exposure to global semiconductor manufacturers without single-name risk.,Self-research,2026-05-22,Easier than picking individual chip names.
+URA,Global X Uranium ETF,etf,Energy,Uranium Mining,Nuclear Energy,Pure-play on uranium miners; benefits if nuclear restart thesis plays out.,YouTube - Mike Maloney,2026-05-22,More volatile than CEG; smaller cap.
+BTC,Bitcoin,crypto,Crypto,Layer 1,"Crypto, Store of Value",Largest cryptocurrency by market cap; digital store-of-value narrative.,Independent,2026-05-22,Crypto has no traditional fundamentals - scored differently.

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Investment Radar — daily snapshot launchd job
+    =============================================
+
+    What this does:
+        Every morning at 8:00 AM local time, runs radar/daily_snapshot.py
+        which scores every ticker in ideas.csv and writes a dated CSV
+        to snapshots/. No dashboard or terminal needs to be open.
+
+    How to install (one-time setup):
+        cp ~/Investment_Radar/launchd/com.frankgrant.investmentradar.snapshot.plist \
+            ~/Library/LaunchAgents/
+        launchctl load ~/Library/LaunchAgents/com.frankgrant.investmentradar.snapshot.plist
+
+    How to stop the schedule:
+        launchctl unload ~/Library/LaunchAgents/com.frankgrant.investmentradar.snapshot.plist
+
+    How to test it immediately (without waiting for 8 AM):
+        launchctl start com.frankgrant.investmentradar.snapshot
+        # Check the log:
+        cat ~/Investment_Radar/snapshot.log
+-->
+<plist version="1.0">
+<dict>
+    <!-- A unique reverse-DNS label so launchctl can address this job. -->
+    <key>Label</key>
+    <string>com.frankgrant.investmentradar.snapshot</string>
+
+    <!-- The actual command: venv's python -m radar.daily_snapshot.
+         Using the venv's python guarantees pandas / yfinance are
+         on the path without needing to activate the venv first. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/frankgrant/Investment_Radar/venv/bin/python</string>
+        <string>-m</string>
+        <string>radar.daily_snapshot</string>
+    </array>
+
+    <!-- Run the command from inside the project folder so relative
+         imports (radar.*) resolve correctly. -->
+    <key>WorkingDirectory</key>
+    <string>/Users/frankgrant/Investment_Radar</string>
+
+    <!-- Schedule: every day at 8:00 AM local time. Change Hour to
+         your preferred time. (To run twice a day, swap this dict
+         for an <array> of <dict>s, one per fire time.) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Both stdout and stderr append to snapshot.log so you can
+         see what happened on past runs.  Tail this if the job
+         stops working unexpectedly. -->
+    <key>StandardOutPath</key>
+    <string>/Users/frankgrant/Investment_Radar/snapshot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/frankgrant/Investment_Radar/snapshot.log</string>
+
+    <!-- Don't run immediately at load — wait for the next scheduled
+         time. Change to <true/> if you want it to fire the moment
+         you `launchctl load` the plist. -->
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

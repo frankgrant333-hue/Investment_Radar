@@ -1,0 +1,3 @@
+symbol,name,asset_type,current_price,past_30d_price,qm,composite_score,composite_grade,value_score,value_grade,tech_score,tech_grade,theme
+NVDA,NVIDIA Corp,stock,$130.55,$118.20,⭐,76,B,73,B,79,B,"AI, Data Centers"
+BTC-USD,Bitcoin USD,crypto,"$67,234.50","$62,100.00",,82,B,N/A,N/A,82,B,Cryptocurrency
