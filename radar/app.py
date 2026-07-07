@@ -64,11 +64,34 @@ from datetime import date
 # Streamlit Cloud's containers. Zero configuration required.
 IS_HOSTED = platform.system() != "Darwin"
 
+
+# --- 1b. Color-coded grade display -----------------------------------
+#
+# Streamlit's data_editor doesn't support conditional-color cells the
+# way Excel does. The next-best beginner-friendly thing: prefix each
+# grade letter with a coloured circle emoji so you can spot A's and
+# F's at a glance. Emoji render everywhere — on phone, on desktop, in
+# a screenshot pasted into a text message.
+_GRADE_EMOJI = {
+    "A":   "🟢 A",
+    "B":   "🟢 B",
+    "C":   "🟡 C",
+    "D":   "🟠 D",
+    "F":   "🔴 F",
+    "N/A": "⚫ N/A",
+}
+def _colored_grade(grade: str) -> str:
+    """Turn a bare letter grade into 'colour letter' for display."""
+    return _GRADE_EMOJI.get(grade, grade)
+
 from radar.load_data import load_ideas, DEFAULT_CSV_PATH, write_ideas
 from radar.lookup import lookup_ticker
 from radar.fundamentals import fetch_fundamentals
 from radar.technicals import fetch_history, compute_technicals
 from radar.snapshots import take_snapshot, list_snapshots, load_snapshot
+from radar.latest_metrics import (
+    write_latest_metrics, read_latest_metrics, metrics_for_symbol,
+)
 from radar.scoring import (
     value_score, tech_score, composite_score, grade_letter,
     # Sub-scorers for the per-ticker breakdown tables.
@@ -346,58 +369,129 @@ if len(ideas) > 0:
     cur_prices, past_prices = [], []   # display-only price columns
     qm_stars = []    # ⭐ when both value ≥ 70 AND tech ≥ 70 (Phase 4.3)
     qm_flags = []    # hidden boolean column for filtering
-    # st.spinner shows a friendly "doing work…" indicator. The first
-    # time you load this with N tickers it takes up to N*5 seconds
-    # (fundamentals + price history + SPY benchmark). Every subsequent
-    # reload within 30 minutes is instant — both caches hit.
-    with st.spinner("Fetching fundamentals + price history (cached for 30 min)…"):
-        for _, row in ideas.iterrows():
-            v_score, v_grade = cached_score_for(row["symbol"], row["asset_type"])
-            t_score, t_grade = cached_tech_score_for(row["symbol"])
-            c_score = composite_score(v_score, t_score)
-            c_grade = grade_letter(c_score)
-            # Turn floats into clean integer strings for display;
-            # "N/A" for missing — matches grade_letter().
-            v_scores.append("N/A" if v_score is None else f"{round(v_score)}")
-            v_grades.append(v_grade)
-            t_scores.append("N/A" if t_score is None else f"{round(t_score)}")
-            t_grades.append(t_grade)
-            c_scores.append("N/A" if c_score is None else f"{round(c_score)}")
-            c_grades.append(c_grade)
-            # For sorting: use float('-inf') for N/A so they fall to
-            # the bottom when we sort descending. We never DISPLAY this
-            # column — it's stripped via column_order below.
-            c_numeric.append(c_score if c_score is not None else float("-inf"))
+    metrics_last_computed_at = ""   # populated on hosted view for the "last synced" caption
 
-            # --- Quality + Momentum flag (Phase 4.3) ---
-            # The "academic sweet spot": both high fundamentals AND
-            # strong price action. Either alone isn't enough — value
-            # without momentum can be a value trap; momentum without
-            # quality is a meme stock.
+    if IS_HOSTED:
+        # === Cloud path: no Yahoo calls ===================================
+        #
+        # Yahoo's `.info` endpoint (fundamentals) is rate-limited from
+        # datacenter IPs, so calling it from Streamlit Cloud gives us
+        # N/A for every stock. Instead we read `latest_metrics.csv` —
+        # which Frank's Mac wrote and pushed via GitHub — and derive
+        # scores from those stored raw metrics using the pure-math
+        # scoring functions. Same numbers Frank sees on his Mac.
+        stored = read_latest_metrics()
+        for _, row in ideas.iterrows():
+            symbol = row["symbol"]
+            m = metrics_for_symbol(stored, symbol)
+            if m is None:
+                # Ticker was added on Mac but hasn't been pushed yet.
+                v_scores.append("N/A"); v_grades.append("N/A")
+                t_scores.append("N/A"); t_grades.append("N/A")
+                c_scores.append("N/A"); c_grades.append("N/A")
+                c_numeric.append(float("-inf"))
+                cur_prices.append("N/A"); past_prices.append("N/A")
+                qm_stars.append(""); qm_flags.append(False)
+                continue
+            v_score = value_score({
+                "debt_to_equity":  m["debt_to_equity"],
+                "current_ratio":   m["current_ratio"],
+                "net_cash_pct":    m["net_cash_pct"],
+                "roe":             m["roe"],
+                "fcf_yield":       m["fcf_yield"],
+            })
+            t_score = tech_score({
+                "stage_2":            m["stage_2"],
+                "dist_from_20d_high": m["dist_from_20d_high"],
+                "rs_vs_spy":          m["rs_vs_spy"],
+                "atr_pct":            m["atr_pct"],
+            })
+            c_score = composite_score(v_score, t_score)
+            v_scores.append("N/A" if v_score is None else f"{round(v_score)}")
+            v_grades.append(_colored_grade(grade_letter(v_score)))
+            t_scores.append("N/A" if t_score is None else f"{round(t_score)}")
+            t_grades.append(_colored_grade(grade_letter(t_score)))
+            c_scores.append("N/A" if c_score is None else f"{round(c_score)}")
+            c_grades.append(_colored_grade(grade_letter(c_score)))
+            c_numeric.append(c_score if c_score is not None else float("-inf"))
+            cur_prices.append(m["current_price"] or "N/A")
+            past_prices.append(m["past_30d_price"] or "N/A")
             qm_hit = (
                 v_score is not None and v_score >= 70 and
                 t_score is not None and t_score >= 70
             )
-            qm_flags.append(qm_hit)
             qm_stars.append("⭐" if qm_hit else "")
+            qm_flags.append(qm_hit)
+            if m.get("computed_at"):
+                metrics_last_computed_at = m["computed_at"]
+    else:
+        # === Mac path: fetch from Yahoo AND persist for the phone view =====
+        #
+        # Same as before, plus we buffer per-symbol raw metrics into
+        # `metrics_buffer` and write them to `latest_metrics.csv` at
+        # the end of the loop. That's the file the hosted view reads.
+        metrics_buffer = []
+        with st.spinner("Fetching fundamentals + price history (cached for 30 min)…"):
+            spy_history_for_metrics = cached_history("SPY")
+            for _, row in ideas.iterrows():
+                v_score, v_grade = cached_score_for(row["symbol"], row["asset_type"])
+                t_score, t_grade = cached_tech_score_for(row["symbol"])
+                c_score = composite_score(v_score, t_score)
+                c_grade = grade_letter(c_score)
+                v_scores.append("N/A" if v_score is None else f"{round(v_score)}")
+                v_grades.append(_colored_grade(v_grade))
+                t_scores.append("N/A" if t_score is None else f"{round(t_score)}")
+                t_grades.append(_colored_grade(t_grade))
+                c_scores.append("N/A" if c_score is None else f"{round(c_score)}")
+                c_grades.append(_colored_grade(c_grade))
+                c_numeric.append(c_score if c_score is not None else float("-inf"))
 
-            # --- Price columns (pulled from the same cached history
-            #     used by the tech score — no extra Yahoo calls). ---
-            history = cached_history(row["symbol"])
-            if history is None or history.empty:
-                cur_prices.append("N/A")
-                past_prices.append("N/A")
-            else:
-                last_close = float(history["Close"].iloc[-1])
-                cur_prices.append(f"${last_close:,.2f}")
-                # 30 trading days back. If history is shorter than 30
-                # rows (very new ticker), say so honestly rather than
-                # silently using the oldest available close.
-                if len(history) >= 30:
-                    past_close = float(history["Close"].iloc[-30])
-                    past_prices.append(f"${past_close:,.2f}")
-                else:
+                qm_hit = (
+                    v_score is not None and v_score >= 70 and
+                    t_score is not None and t_score >= 70
+                )
+                qm_flags.append(qm_hit)
+                qm_stars.append("⭐" if qm_hit else "")
+
+                history = cached_history(row["symbol"])
+                if history is None or history.empty:
+                    cur_prices.append("N/A")
                     past_prices.append("N/A")
+                    tech_raw = {"stage_2": None, "dist_from_20d_high": None,
+                                "rs_vs_spy": None, "atr_pct": None}
+                else:
+                    last_close = float(history["Close"].iloc[-1])
+                    cur_prices.append(f"${last_close:,.2f}")
+                    if len(history) >= 30:
+                        past_close = float(history["Close"].iloc[-30])
+                        past_prices.append(f"${past_close:,.2f}")
+                    else:
+                        past_prices.append("N/A")
+                    tech_raw = compute_technicals(history, spy_history_for_metrics)
+
+                # Collect the RAW numbers Yahoo gave us so the phone view
+                # can score them without hitting Yahoo's rate limits.
+                funds_raw = cached_fundamentals(row["symbol"], row["asset_type"])
+                metrics_buffer.append({
+                    "symbol":             row["symbol"],
+                    "current_price":      cur_prices[-1],
+                    "past_30d_price":     past_prices[-1],
+                    "debt_to_equity":     funds_raw.get("debt_to_equity"),
+                    "current_ratio":      funds_raw.get("current_ratio"),
+                    "net_cash_pct":       funds_raw.get("net_cash_pct"),
+                    "roe":                funds_raw.get("roe"),
+                    "fcf_yield":          funds_raw.get("fcf_yield"),
+                    "stage_2":            tech_raw.get("stage_2"),
+                    "dist_from_20d_high": tech_raw.get("dist_from_20d_high"),
+                    "rs_vs_spy":          tech_raw.get("rs_vs_spy"),
+                    "atr_pct":            tech_raw.get("atr_pct"),
+                })
+        # After the loop: persist the metrics so the phone view can read
+        # them once Frank pushes to GitHub. Non-fatal if it fails.
+        try:
+            write_latest_metrics(metrics_buffer)
+        except Exception:
+            pass
     ideas["qm"]               = qm_stars
     ideas["current_price"]    = cur_prices
     ideas["past_30d_price"]   = past_prices
@@ -516,19 +610,49 @@ else:
     # corrupt it. Flip this toggle when you need to fix something
     # Yahoo got wrong (e.g. the Bitwise XRP ETF labelled as 'stock').
     #
-    # Hidden on the hosted phone view — that's always read-only.
+    # Also here: a "Group by sector" toggle. When ON, the table sorts
+    # by sector then sub_sector then composite (still highest-first
+    # within each group), so all Technology tickers cluster together,
+    # all Financials cluster together, etc.
+    #
+    # Both toggles hidden on the phone view — that's always read-only.
     if IS_HOSTED:
         metadata_disabled = True
-    else:
-        edit_mode = st.toggle(
-            "🔓 Edit metadata mode",
+        group_by_sector = st.toggle(
+            "📁 Group by sector & sub-sector",
             value=False,
-            help="OFF (default): Yahoo-derived columns are read-only. "
-                 "ON: name, sector, sub_sector, asset_type, and description "
-                 "become editable so you can hand-fix Yahoo misclassifications. "
-                 "Score and price columns remain locked — they're derived.",
+            help="ON: cluster tickers by sector then sub-sector. "
+                 "OFF: sort by composite score (highest first).",
         )
+    else:
+        tog_edit, tog_group = st.columns([1, 1])
+        with tog_edit:
+            edit_mode = st.toggle(
+                "🔓 Edit metadata mode",
+                value=False,
+                help="OFF (default): Yahoo-derived columns are read-only. "
+                     "ON: name, sector, sub_sector, asset_type, and description "
+                     "become editable so you can hand-fix Yahoo misclassifications. "
+                     "Score and price columns remain locked — they're derived.",
+            )
+        with tog_group:
+            group_by_sector = st.toggle(
+                "📁 Group by sector & sub-sector",
+                value=False,
+                help="ON: cluster tickers by sector then sub-sector. "
+                     "OFF: sort by composite score (highest first).",
+            )
         metadata_disabled = not edit_mode
+
+    # Apply the group-by-sector re-sort if requested. Composite-desc
+    # still runs within each group so the best pick per sector floats
+    # to the top of its cluster.
+    if group_by_sector:
+        ideas = ideas.sort_values(
+            by=["sector", "sub_sector", "_composite_num"],
+            ascending=[True, True, False],
+            kind="mergesort",
+        ).reset_index(drop=True)
 
     edited = st.data_editor(
         ideas,
@@ -796,7 +920,7 @@ else:
     def _fmt_raw(v, decimals=2):
         return "N/A" if v is None else f"{v:.{decimals}f}"
     def _fmt_sub(s):
-        return "N/A" if s is None else f"{s:.0f} ({grade_letter(s)})"
+        return "N/A" if s is None else f"{s:.0f} ({_colored_grade(grade_letter(s))})"
 
     for _, row in ideas.iterrows():
         symbol = row["symbol"]
@@ -823,7 +947,20 @@ else:
 
             with bd_v:
                 st.markdown(f"**Value Score: {row['value_score']} ({row['value_grade']})**")
-                funds = cached_fundamentals(symbol, row["asset_type"])
+                # On Mac: fetch fresh from Yahoo (works — home IP).
+                # On Cloud: pull from latest_metrics.csv (Yahoo would
+                # rate-limit us; Frank's Mac already wrote the numbers).
+                if IS_HOSTED:
+                    _m = metrics_for_symbol(read_latest_metrics(), symbol) or {}
+                    funds = {
+                        "debt_to_equity": _m.get("debt_to_equity"),
+                        "current_ratio":  _m.get("current_ratio"),
+                        "net_cash_pct":   _m.get("net_cash_pct"),
+                        "roe":            _m.get("roe"),
+                        "fcf_yield":      _m.get("fcf_yield"),
+                    }
+                else:
+                    funds = cached_fundamentals(symbol, row["asset_type"])
                 if all(v is None for v in funds.values()):
                     st.caption(f"_N/A — {row['asset_type']}s don't report these._")
                 else:
@@ -853,7 +990,16 @@ else:
 
             with bd_t:
                 st.markdown(f"**Tech Score: {row['tech_score']} ({row['tech_grade']})**")
-                t_metrics = compute_technicals(history, cached_history("SPY"))
+                if IS_HOSTED:
+                    _m = metrics_for_symbol(read_latest_metrics(), symbol) or {}
+                    t_metrics = {
+                        "stage_2":            _m.get("stage_2"),
+                        "dist_from_20d_high": _m.get("dist_from_20d_high"),
+                        "rs_vs_spy":          _m.get("rs_vs_spy"),
+                        "atr_pct":            _m.get("atr_pct"),
+                    }
+                else:
+                    t_metrics = compute_technicals(history, cached_history("SPY"))
                 if all(v is None for v in t_metrics.values()):
                     st.caption("_N/A — not enough price history._")
                 else:
