@@ -2,64 +2,75 @@
 # =============================================================
 # 📡 Investment Radar — START
 # =============================================================
-# Double-click this file to launch the dashboard. A Terminal
-# window opens and stays open while the server runs; Chrome
-# opens automatically at http://localhost:9000 after a few seconds.
+# Double-click this to launch the dashboard.
 #
-# To stop cleanly, double-click "Radar_Stop.command" instead of
-# using Ctrl+C in this window.
+# Streamlit runs in the BACKGROUND, so this Terminal window
+# closes itself after a few seconds — no more window pile-up.
+# The dashboard log is saved to ~/Investment_Radar/logs/streamlit.log
+# in case you ever need to check what happened.
 # =============================================================
 
-cd ~/Investment_Radar 2>/dev/null || {
+LOG_DIR="$HOME/Investment_Radar/logs"
+mkdir -p "$LOG_DIR"
+
+# Best-effort clean up any error output from previous runs
+: > "$LOG_DIR/streamlit.log"
+
+cd "$HOME/Investment_Radar" 2>/dev/null || {
     echo "❌ Couldn't find ~/Investment_Radar folder."
-    echo ""
-    echo "Press any key to close this window..."
+    echo "Press any key to close..."
     read -n 1 -s
     exit 1
 }
 
-# Make sure the venv exists — otherwise nothing else works
 if [ ! -d "venv" ]; then
     echo "❌ Virtual environment not found at ~/Investment_Radar/venv/"
-    echo ""
-    echo "You probably need to (re-)create it. Ask Claude to walk you"
-    echo "through it, or run these commands manually in Terminal:"
-    echo ""
-    echo "  cd ~/Investment_Radar"
-    echo "  python3 -m venv venv"
-    echo "  source venv/bin/activate"
-    echo "  pip install -r requirements.txt"
-    echo ""
-    echo "Press any key to close this window..."
-    read -n 1 -s
+    echo "Ask Claude to help you set it up."
+    read -n 1 -s -p "Press any key to close..."
     exit 1
 fi
 
-# If the server is already running, just open a new browser tab
+# ---- Already running? just open a browser tab ----
 if lsof -ti:9000 >/dev/null 2>&1; then
-    echo "⚠️  Investment Radar is already running on port 9000."
-    echo "   Opening a Chrome tab to it now."
+    echo "⚠️  Investment Radar is already running."
+    echo "   Opening a Chrome tab to http://localhost:9000..."
     open -a "Google Chrome" "http://localhost:9000"
     sleep 2
-    echo ""
-    echo "You can close this window."
+    # Close this terminal — nothing more to do
+    osascript -e 'tell application "Terminal" to close (front window)' 2>/dev/null &
     exit 0
 fi
 
-# Activate the venv
+# ---- Launch Streamlit as a detached background process ----
+# `nohup` = keep running after this terminal closes
+# `disown -a` = drop the job from bash's job table so terminal
+# can exit cleanly without prompting "process still running".
 source venv/bin/activate
 
-echo "📡  Starting Investment Radar..."
+echo "📡  Booting Investment Radar in the background..."
+
+nohup streamlit run radar/app.py \
+        --server.port 9000 \
+        --server.headless true \
+        >"$LOG_DIR/streamlit.log" 2>&1 &
+STREAMLIT_PID=$!
+echo $STREAMLIT_PID > "$LOG_DIR/streamlit.pid"
+disown -a 2>/dev/null || true
+
+echo "   Server PID: $STREAMLIT_PID"
+echo "   Log:        $LOG_DIR/streamlit.log"
 echo ""
 echo "   Chrome will open in ~5 seconds."
-echo "   Leave THIS Terminal window open while you use the Radar."
 echo "   To stop, double-click 📡 Radar_Stop.command on your Desktop."
 echo ""
 
-# Open Chrome once the server has had time to boot
+# Kick off a browser tab in the background (in case Streamlit didn't)
 (sleep 5 && open -a "Google Chrome" "http://localhost:9000") &
 
-# Run streamlit (blocks until stopped)
-#   --server.headless true : don't let Streamlit auto-open its
-#     own browser tab, since we're doing it explicitly above.
-streamlit run radar/app.py --server.port 9000 --server.headless true
+# Give the user a couple of seconds to read the message
+sleep 4
+
+# Auto-close this terminal window so you don't accumulate dead
+# terminals across the day.
+osascript -e 'tell application "Terminal" to close (front window)' 2>/dev/null &
+exit 0

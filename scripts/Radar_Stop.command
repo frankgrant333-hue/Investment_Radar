@@ -2,41 +2,47 @@
 # =============================================================
 # 📡 Investment Radar — STOP
 # =============================================================
-# Double-click this file to shut down the dashboard cleanly.
+# Double-click to shut down the dashboard cleanly.
 #
 # What it does:
-#   1. Kills the Streamlit server (whatever is on port 9000).
+#   1. Kills the Streamlit server (by PID file, then by port).
 #   2. Closes any Chrome tabs pointed at the Radar.
-#   3. Auto-closes this Terminal window in 3 seconds.
+#   3. Closes this Terminal window in 2 seconds.
 #
-# First time you run it, macOS will ask "Terminal wants to control
-# Google Chrome." Click Allow — that's how it can close browser tabs.
+# First time you run it, macOS will ask "Terminal wants to
+# control Google Chrome." Click Allow — that permission is
+# how the script can close browser tabs for you.
 # =============================================================
+
+LOG_DIR="$HOME/Investment_Radar/logs"
 
 echo "📡  Stopping Investment Radar..."
 echo ""
 
-# ---- Kill the Streamlit server ----
-PID=$(lsof -ti:9000 2>/dev/null)
-if [ -n "$PID" ]; then
-    kill "$PID" 2>/dev/null
-    echo "✓ Sent stop signal to Streamlit server (PID $PID)"
-    sleep 1
-    # Force-kill if it didn't obey the polite kill
+# ---- Kill by saved PID (fast + reliable) ----
+if [ -f "$LOG_DIR/streamlit.pid" ]; then
+    PID=$(cat "$LOG_DIR/streamlit.pid")
     if kill -0 "$PID" 2>/dev/null; then
-        kill -9 "$PID" 2>/dev/null
-        echo "  Force-killed the stubborn process"
+        kill "$PID" 2>/dev/null
+        echo "✓ Stopped server (PID $PID)"
     fi
-else
-    echo "  Streamlit server wasn't running — nothing to stop."
+    rm -f "$LOG_DIR/streamlit.pid"
+fi
+
+# ---- Belt-and-braces: also kill by port 9000 ----
+PORT_PID=$(lsof -ti:9000 2>/dev/null)
+if [ -n "$PORT_PID" ]; then
+    kill "$PORT_PID" 2>/dev/null
+    sleep 1
+    kill -9 "$PORT_PID" 2>/dev/null || true
+    echo "✓ Confirmed port 9000 is clear"
+elif [ -z "$PID" ]; then
+    echo "  (Streamlit wasn't running)"
 fi
 
 # ---- Close Chrome tabs pointing at the Radar ----
-echo ""
-echo "Closing Chrome tabs for the Radar..."
 osascript <<'APPLESCRIPT' 2>/dev/null || echo "  (Chrome not open or automation not permitted)"
 tell application "Google Chrome"
-    set closed_count to 0
     try
         set win_list to windows
         repeat with w in win_list
@@ -48,40 +54,20 @@ tell application "Google Chrome"
                         or current_url contains "127.0.0.1:9000" ¬
                         or current_url contains "frank-investment-radar" then
                         close tab i of w
-                        set closed_count to closed_count + 1
                     end if
                 end try
             end repeat
         end repeat
     end try
-    return closed_count
 end tell
 APPLESCRIPT
-echo "✓ Chrome tabs closed"
-
-# ---- Also kill the running Terminal window that the Start script left open ----
-# (finds any Terminal window whose title mentions "Radar_Start" and closes it)
-osascript <<'APPLESCRIPT' 2>/dev/null || true
-tell application "Terminal"
-    try
-        set win_list to windows
-        repeat with w in win_list
-            try
-                if name of w contains "Radar_Start" then
-                    close w
-                end if
-            end try
-        end repeat
-    end try
-end tell
-APPLESCRIPT
+echo "✓ Closed Radar Chrome tabs"
 
 echo ""
 echo "📡  Investment Radar is fully stopped."
-echo ""
-echo "This window will close in 3 seconds..."
-sleep 3
+echo "   This window closes in 2 seconds..."
+sleep 2
 
-# Close THIS Terminal window (the Stop one)
+# ---- Close this Terminal window ----
 osascript -e 'tell application "Terminal" to close (front window)' 2>/dev/null &
 exit 0

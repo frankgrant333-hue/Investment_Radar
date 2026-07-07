@@ -1,29 +1,33 @@
 #!/bin/bash
 # =============================================================
-# 📡 Investment Radar — REFRESH (stop + restart cleanly)
+# 📡 Investment Radar — REFRESH (stop + start cleanly)
 # =============================================================
-# Double-click to shut down the currently-running dashboard
-# and immediately start a fresh instance. Useful when:
-#   - the dashboard seems stuck or slow
-#   - you edited a code file and want to see the change
-#   - you want to force fresh data from Yahoo
+# Double-click to shut down the currently-running dashboard and
+# immediately boot a fresh one — with fresh data from Yahoo.
+# Auto-closes this Terminal after 3 seconds.
 # =============================================================
+
+LOG_DIR="$HOME/Investment_Radar/logs"
+mkdir -p "$LOG_DIR"
 
 echo "📡  Refreshing Investment Radar..."
 echo ""
 
-# ---- Step 1: kill the old server ----
-PID=$(lsof -ti:9000 2>/dev/null)
-if [ -n "$PID" ]; then
-    kill "$PID" 2>/dev/null
+# ---- Stop old server ----
+if [ -f "$LOG_DIR/streamlit.pid" ]; then
+    OLD_PID=$(cat "$LOG_DIR/streamlit.pid")
+    kill "$OLD_PID" 2>/dev/null
+    rm -f "$LOG_DIR/streamlit.pid"
+fi
+PORT_PID=$(lsof -ti:9000 2>/dev/null)
+if [ -n "$PORT_PID" ]; then
+    kill "$PORT_PID" 2>/dev/null
     sleep 1
-    kill -9 "$PID" 2>/dev/null || true
-    echo "✓ Stopped old server (PID $PID)"
-else
-    echo "  (no old server was running)"
+    kill -9 "$PORT_PID" 2>/dev/null || true
+    echo "✓ Stopped old server"
 fi
 
-# Close the old Terminal + Chrome tabs so we start fresh
+# ---- Close old Chrome tabs so Refresh gives a clean slate ----
 osascript <<'APPLESCRIPT' 2>/dev/null || true
 tell application "Google Chrome"
     try
@@ -42,44 +46,35 @@ tell application "Google Chrome"
         end repeat
     end try
 end tell
-
-tell application "Terminal"
-    try
-        set win_list to windows
-        repeat with w in win_list
-            try
-                if name of w contains "Radar_Start" then
-                    close w
-                end if
-            end try
-        end repeat
-    end try
-end tell
 APPLESCRIPT
 
-sleep 2
+sleep 1
 
-# ---- Step 2: start fresh ----
-cd ~/Investment_Radar 2>/dev/null || {
-    echo "❌ Couldn't find ~/Investment_Radar folder."
-    echo "Press any key to close..."
-    read -n 1 -s
-    exit 1
-}
-
+# ---- Start fresh ----
+cd "$HOME/Investment_Radar" 2>/dev/null || exit 1
 if [ ! -d "venv" ]; then
-    echo "❌ Virtual environment missing. See Radar_Start.command output."
+    echo "❌ venv missing — can't restart."
     read -n 1 -s
     exit 1
 fi
-
 source venv/bin/activate
 
-echo ""
-echo "📡  Booting fresh instance..."
-echo "   Chrome will open in ~5 seconds."
-echo "   Leave this window open while you use the Radar."
-echo ""
+: > "$LOG_DIR/streamlit.log"
+
+nohup streamlit run radar/app.py \
+        --server.port 9000 \
+        --server.headless true \
+        >"$LOG_DIR/streamlit.log" 2>&1 &
+STREAMLIT_PID=$!
+echo $STREAMLIT_PID > "$LOG_DIR/streamlit.pid"
+disown -a 2>/dev/null || true
+
+echo "✓ Booted fresh instance (PID $STREAMLIT_PID)"
+echo "   Chrome will open in ~5 seconds..."
 
 (sleep 5 && open -a "Google Chrome" "http://localhost:9000") &
-streamlit run radar/app.py --server.port 9000 --server.headless true
+
+# Auto-close this terminal
+sleep 3
+osascript -e 'tell application "Terminal" to close (front window)' 2>/dev/null &
+exit 0
