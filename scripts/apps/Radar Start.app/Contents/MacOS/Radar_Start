@@ -1,0 +1,39 @@
+#!/bin/bash
+# Radar Start — launches Streamlit in the background, opens Chrome.
+LOG_DIR="$HOME/Investment_Radar/logs"
+mkdir -p "$LOG_DIR"
+: > "$LOG_DIR/streamlit.log"
+
+cd "$HOME/Investment_Radar" || {
+    osascript -e 'display notification "Couldn'"'"'t find ~/Investment_Radar" with title "📡 Radar Start" sound name "Basso"'
+    exit 1
+}
+
+if [ ! -d "venv" ]; then
+    osascript -e 'display notification "Virtual environment missing (venv/). Ask Claude to help." with title "📡 Radar Start" sound name "Basso"'
+    exit 1
+fi
+
+# Already running? just pop a browser tab.
+if lsof -ti:9000 >/dev/null 2>&1; then
+    open -a "Google Chrome" "http://localhost:9000"
+    osascript -e 'display notification "Already running — opened Chrome tab." with title "📡 Radar Start"'
+    exit 0
+fi
+
+source venv/bin/activate
+
+nohup streamlit run radar/app.py \
+        --server.port 9000 \
+        --server.headless true \
+        >"$LOG_DIR/streamlit.log" 2>&1 &
+STREAMLIT_PID=$!
+echo $STREAMLIT_PID > "$LOG_DIR/streamlit.pid"
+disown -a 2>/dev/null || true
+
+osascript -e 'display notification "Booting… Chrome will open in a few seconds." with title "📡 Radar Start" sound name "Glass"'
+
+# Give the server a moment, then open Chrome.
+(sleep 5 && open -a "Google Chrome" "http://localhost:9000") &
+
+exit 0

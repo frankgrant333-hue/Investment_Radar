@@ -1,0 +1,43 @@
+#!/bin/bash
+# Radar Stop — kills Streamlit, closes Chrome tabs, no visible UI.
+LOG_DIR="$HOME/Investment_Radar/logs"
+
+# Kill by saved PID first (fast + clean).
+if [ -f "$LOG_DIR/streamlit.pid" ]; then
+    PID=$(cat "$LOG_DIR/streamlit.pid")
+    kill "$PID" 2>/dev/null
+    rm -f "$LOG_DIR/streamlit.pid"
+fi
+
+# Belt-and-braces: also kill anything on port 9000.
+PORT_PID=$(lsof -ti:9000 2>/dev/null)
+if [ -n "$PORT_PID" ]; then
+    kill "$PORT_PID" 2>/dev/null
+    sleep 1
+    kill -9 "$PORT_PID" 2>/dev/null || true
+fi
+
+# Close Chrome tabs pointed at the Radar.
+osascript <<'APPLESCRIPT' 2>/dev/null || true
+tell application "Google Chrome"
+    try
+        set win_list to windows
+        repeat with w in win_list
+            set tab_count to (count of tabs of w)
+            repeat with i from tab_count to 1 by -1
+                try
+                    set url_val to URL of tab i of w
+                    if url_val contains "localhost:9000" ¬
+                        or url_val contains "127.0.0.1:9000" ¬
+                        or url_val contains "frank-investment-radar" then
+                        close tab i of w
+                    end if
+                end try
+            end repeat
+        end repeat
+    end try
+end tell
+APPLESCRIPT
+
+osascript -e 'display notification "Dashboard shut down + Chrome tabs closed." with title "📡 Radar Stop" sound name "Basso"'
+exit 0
