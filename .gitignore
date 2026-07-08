@@ -24,3 +24,6 @@ __pycache__/
 # --- Secrets, in case we ever add an API key file later ---
 .env
 *.secret
+
+# --- Runtime logs and process IDs (machine-local, never commit) ---
+logs/

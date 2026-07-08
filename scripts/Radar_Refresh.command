@@ -61,7 +61,7 @@ source venv/bin/activate
 
 : > "$LOG_DIR/streamlit.log"
 
-nohup streamlit run radar/app.py \
+nohup arch -arm64 streamlit run radar/app.py \
         --server.port 9000 \
         --server.headless true \
         >"$LOG_DIR/streamlit.log" 2>&1 &

@@ -23,7 +23,7 @@ fi
 
 source venv/bin/activate
 
-nohup streamlit run radar/app.py \
+nohup arch -arm64 streamlit run radar/app.py \
         --server.port 9000 \
         --server.headless true \
         >"$LOG_DIR/streamlit.log" 2>&1 &
