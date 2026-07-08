@@ -99,6 +99,8 @@ from radar.scoring import (
     score_roe, score_fcf_yield,
     score_stage_2, score_dist_from_20d_high, score_rs_vs_spy, score_atr_pct,
 )
+from radar.money_flow import compute_sector_flow, top_sectors
+from radar.catalog import load_catalog
 
 
 # --- 1a. Cached fundamentals fetcher --------------------------------
@@ -204,6 +206,119 @@ def append_ticker_to_csv(new_row: dict) -> None:
     # iCloud sync is configured), so the phone view — which reads the
     # local repo copy from GitHub — never falls behind.
     write_ideas(new_df)
+
+
+# --- 3b. Money-flow panel — where is big money rotating? -------------
+#
+# Watches the 11 SPDR sector ETFs. For each one: dollar volume
+# (price x shares traded) over the last 5 / 15 / 30 trading days,
+# compared to the SAME length of time just before. A big positive
+# number = money accelerating INTO that sector. See money_flow.py
+# for the full plain-English explanation.
+
+@st.cache_data(ttl=1800)  # refresh at most every 30 minutes
+def cached_sector_flow():
+    return compute_sector_flow()
+
+
+st.subheader("💰 Where the money is flowing")
+_flow = cached_sector_flow()
+if _flow is None:
+    st.caption(
+        "Couldn't reach Yahoo Finance for sector data right now — "
+        "this panel will come back on the next refresh."
+    )
+else:
+    _windows = [("5d", "Past 5 days"), ("15d", "Past 15 days"), ("30d", "Past 30 days")]
+    _medals = ["🥇", "🥈", "🥉"]
+    _flow_cols = st.columns(3)
+    for _col, (_w, _label) in zip(_flow_cols, _windows):
+        with _col:
+            st.markdown(f"**{_label}**")
+            for _medal, (_sector, _ratio) in zip(_medals, top_sectors(_flow, _w)):
+                _arrow = "🔺" if _ratio > 0 else "🔻"
+                st.markdown(f"{_medal} {_sector} &nbsp;{_arrow} {_ratio:+.0%}")
+    st.caption(
+        "Ranked by change in dollar volume (price × shares traded) in the "
+        "11 sector ETFs vs. the equal-length period before. "
+        "+25% = a quarter more money trading in that sector than before."
+    )
+
+st.divider()
+
+
+# --- 3c. Ticker catalog — browse by sector, click to add -------------
+#
+# catalog.csv (project root — edit it in Excel any time) holds a master
+# menu of well-known stocks, ETFs and cryptos organized by sector and
+# sub-sector. On the Mac, clicking a ticker looks it up on Yahoo and
+# adds it straight to your radar. On the phone view it's browse-only.
+
+_catalog = load_catalog()
+if len(_catalog) > 0:
+    with st.expander("🗂️ Ticker catalog — browse by sector, click to add", expanded=False):
+
+        # A little celebration note that survives the page rerun after adding.
+        if "catalog_added" in st.session_state:
+            st.success(f"✅ {st.session_state.pop('catalog_added')} added to your radar!")
+
+        if IS_HOSTED:
+            st.info("📱 Browse-only here — adding to the radar happens on your Mac.")
+
+        _sectors = sorted(_catalog["sector"].unique())
+        _chosen_sector = st.selectbox("Pick a sector", _sectors, key="catalog_sector")
+        _sector_rows = _catalog[_catalog["sector"] == _chosen_sector]
+
+        # Which symbols are already on the radar? (✅ = already there.)
+        try:
+            _on_radar = set(load_ideas()["symbol"].str.upper())
+        except Exception:
+            _on_radar = set()
+
+        for _sub in sorted(_sector_rows["sub_sector"].unique()):
+            _group = _sector_rows[_sector_rows["sub_sector"] == _sub]
+            st.markdown(f"**{_sub}**")
+            _btn_cols = st.columns(4)
+            for _i, (_, _row) in enumerate(_group.iterrows()):
+                with _btn_cols[_i % 4]:
+                    _already = _row["symbol"].upper() in _on_radar
+                    if IS_HOSTED:
+                        _mark = "✅" if _already else "•"
+                        st.markdown(f"{_mark} `{_row['symbol']}` {_row['name']}")
+                    elif _already:
+                        st.button(
+                            f"✅ {_row['symbol']}",
+                            key=f"cat_{_row['symbol']}",
+                            help=f"{_row['name']} — already on your radar",
+                            disabled=True,
+                            use_container_width=True,
+                        )
+                    else:
+                        if st.button(
+                            f"➕ {_row['symbol']}",
+                            key=f"cat_{_row['symbol']}",
+                            help=f"Add {_row['name']} to your radar",
+                            use_container_width=True,
+                        ):
+                            with st.spinner(f"Looking up {_row['symbol']} on Yahoo…"):
+                                _data = lookup_ticker(_row["symbol"])
+                            _new_row = {
+                                "symbol": _data["symbol"] if _data.get("found") else _row["symbol"],
+                                "name": (_data.get("name") or _row["name"]),
+                                "asset_type": (_data.get("asset_type") or _row["asset_type"]),
+                                "sector": (_data.get("sector") or _row["sector"]),
+                                "sub_sector": (_data.get("sub_sector") or _row["sub_sector"]),
+                                "theme": "",
+                                "description": _data.get("description", ""),
+                                "source": "catalog",
+                                "date_added": date.today().isoformat(),
+                                "notes": "",
+                            }
+                            append_ticker_to_csv(_new_row)
+                            st.session_state["catalog_added"] = _new_row["symbol"]
+                            st.rerun()
+
+st.divider()
 
 
 # --- 4. Sidebar — two-step add flow ----------------------------------

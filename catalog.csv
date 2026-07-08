@@ -1,0 +1,126 @@
+symbol,name,asset_type,sector,sub_sector
+NVDA,NVIDIA,stock,Technology,Semiconductors
+AMD,Advanced Micro Devices,stock,Technology,Semiconductors
+MU,Micron Technology,stock,Technology,Semiconductors
+INTC,Intel,stock,Technology,Semiconductors
+TSM,Taiwan Semiconductor,stock,Technology,Semiconductors
+AVGO,Broadcom,stock,Technology,Semiconductors
+QCOM,Qualcomm,stock,Technology,Semiconductors
+ARM,Arm Holdings,stock,Technology,Semiconductors
+MSFT,Microsoft,stock,Technology,Software
+ORCL,Oracle,stock,Technology,Software
+CRM,Salesforce,stock,Technology,Software
+ADBE,Adobe,stock,Technology,Software
+NOW,ServiceNow,stock,Technology,Software
+PLTR,Palantir,stock,Technology,Software
+AAPL,Apple,stock,Technology,Hardware
+DELL,Dell Technologies,stock,Technology,Hardware
+SMCI,Super Micro Computer,stock,Technology,Hardware
+CRWD,CrowdStrike,stock,Technology,Cybersecurity
+PANW,Palo Alto Networks,stock,Technology,Cybersecurity
+ZS,Zscaler,stock,Technology,Cybersecurity
+FTNT,Fortinet,stock,Technology,Cybersecurity
+GOOGL,Alphabet (Google),stock,Communication,Internet
+META,Meta Platforms,stock,Communication,Internet
+NFLX,Netflix,stock,Communication,Streaming & Media
+DIS,Walt Disney,stock,Communication,Streaming & Media
+T,AT&T,stock,Communication,Telecom
+VZ,Verizon,stock,Communication,Telecom
+TMUS,T-Mobile US,stock,Communication,Telecom
+AMZN,Amazon,stock,Consumer Discretionary,E-commerce
+BABA,Alibaba,stock,Consumer Discretionary,E-commerce
+SHOP,Shopify,stock,Consumer Discretionary,E-commerce
+TSLA,Tesla,stock,Consumer Discretionary,Autos & EV
+F,Ford,stock,Consumer Discretionary,Autos & EV
+GM,General Motors,stock,Consumer Discretionary,Autos & EV
+RIVN,Rivian,stock,Consumer Discretionary,Autos & EV
+HD,Home Depot,stock,Consumer Discretionary,Retail
+NKE,Nike,stock,Consumer Discretionary,Retail
+MCD,McDonald's,stock,Consumer Discretionary,Restaurants
+SBUX,Starbucks,stock,Consumer Discretionary,Restaurants
+PG,Procter & Gamble,stock,Consumer Staples,Household
+KO,Coca-Cola,stock,Consumer Staples,Beverages
+PEP,PepsiCo,stock,Consumer Staples,Beverages
+COST,Costco,stock,Consumer Staples,Retail
+WMT,Walmart,stock,Consumer Staples,Retail
+XOM,Exxon Mobil,stock,Energy,Oil & Gas
+CVX,Chevron,stock,Energy,Oil & Gas
+COP,ConocoPhillips,stock,Energy,Oil & Gas
+OXY,Occidental Petroleum,stock,Energy,Oil & Gas
+SLB,Schlumberger,stock,Energy,Oil Services
+VLO,Valero Energy,stock,Energy,Refining
+MPC,Marathon Petroleum,stock,Energy,Refining
+LNG,Cheniere Energy,stock,Energy,Natural Gas
+JPM,JPMorgan Chase,stock,Financials,Banks
+BAC,Bank of America,stock,Financials,Banks
+WFC,Wells Fargo,stock,Financials,Banks
+GS,Goldman Sachs,stock,Financials,Banks
+MS,Morgan Stanley,stock,Financials,Banks
+V,Visa,stock,Financials,Payments
+MA,Mastercard,stock,Financials,Payments
+PYPL,PayPal,stock,Financials,Payments
+AXP,American Express,stock,Financials,Payments
+BRK-B,Berkshire Hathaway,stock,Financials,Diversified
+COIN,Coinbase,stock,Financials,Crypto Finance
+HOOD,Robinhood,stock,Financials,Crypto Finance
+LLY,Eli Lilly,stock,Healthcare,Pharma
+JNJ,Johnson & Johnson,stock,Healthcare,Pharma
+PFE,Pfizer,stock,Healthcare,Pharma
+MRK,Merck,stock,Healthcare,Pharma
+ABBV,AbbVie,stock,Healthcare,Pharma
+AMGN,Amgen,stock,Healthcare,Biotech
+GILD,Gilead Sciences,stock,Healthcare,Biotech
+VRTX,Vertex Pharmaceuticals,stock,Healthcare,Biotech
+ISRG,Intuitive Surgical,stock,Healthcare,Devices
+MDT,Medtronic,stock,Healthcare,Devices
+UNH,UnitedHealth,stock,Healthcare,Managed Care
+CVS,CVS Health,stock,Healthcare,Managed Care
+BA,Boeing,stock,Industrials,Aerospace & Defense
+LMT,Lockheed Martin,stock,Industrials,Aerospace & Defense
+RTX,RTX (Raytheon),stock,Industrials,Aerospace & Defense
+NOC,Northrop Grumman,stock,Industrials,Aerospace & Defense
+GE,GE Aerospace,stock,Industrials,Aerospace & Defense
+CAT,Caterpillar,stock,Industrials,Machinery
+DE,John Deere,stock,Industrials,Machinery
+UPS,United Parcel Service,stock,Industrials,Transport
+UNP,Union Pacific,stock,Industrials,Transport
+DAL,Delta Air Lines,stock,Industrials,Airlines
+LIN,Linde,stock,Materials,Chemicals
+ALB,Albemarle,stock,Materials,Chemicals & Lithium
+FCX,Freeport-McMoRan,stock,Materials,Copper & Mining
+NEM,Newmont,stock,Materials,Gold Mining
+PLD,Prologis,stock,Real Estate,Industrial REIT
+AMT,American Tower,stock,Real Estate,Infrastructure REIT
+O,Realty Income,stock,Real Estate,Retail REIT
+SPG,Simon Property Group,stock,Real Estate,Retail REIT
+NEE,NextEra Energy,stock,Utilities,Renewables
+DUK,Duke Energy,stock,Utilities,Electric
+SO,Southern Company,stock,Utilities,Electric
+CEG,Constellation Energy,stock,Utilities,Nuclear
+VST,Vistra,stock,Utilities,Power & Nuclear
+SPY,SPDR S&P 500,etf,ETFs & Funds,Broad Index
+QQQ,Invesco Nasdaq-100,etf,ETFs & Funds,Broad Index
+DIA,SPDR Dow Jones,etf,ETFs & Funds,Broad Index
+IWM,iShares Russell 2000,etf,ETFs & Funds,Broad Index
+VTI,Vanguard Total Market,etf,ETFs & Funds,Broad Index
+XLK,Technology Select SPDR,etf,ETFs & Funds,Sector
+XLE,Energy Select SPDR,etf,ETFs & Funds,Sector
+XLF,Financial Select SPDR,etf,ETFs & Funds,Sector
+XLV,Health Care Select SPDR,etf,ETFs & Funds,Sector
+XLI,Industrial Select SPDR,etf,ETFs & Funds,Sector
+SMH,VanEck Semiconductor,etf,ETFs & Funds,Thematic
+ARKK,ARK Innovation,etf,ETFs & Funds,Thematic
+IBIT,iShares Bitcoin Trust,etf,ETFs & Funds,Crypto
+GLD,SPDR Gold Shares,etf,ETFs & Funds,Gold & Metals
+SLV,iShares Silver Trust,etf,ETFs & Funds,Gold & Metals
+TLT,iShares 20+ Yr Treasury,etf,ETFs & Funds,Bonds
+BTC-USD,Bitcoin,crypto,Crypto,Layer 1
+ETH-USD,Ethereum,crypto,Crypto,Layer 1
+SOL-USD,Solana,crypto,Crypto,Layer 1
+ADA-USD,Cardano,crypto,Crypto,Layer 1
+AVAX-USD,Avalanche,crypto,Crypto,Layer 1
+DOT-USD,Polkadot,crypto,Crypto,Layer 1
+XRP-USD,XRP,crypto,Crypto,Payments
+LTC-USD,Litecoin,crypto,Crypto,Payments
+DOGE-USD,Dogecoin,crypto,Crypto,Meme
+LINK-USD,Chainlink,crypto,Crypto,Infrastructure

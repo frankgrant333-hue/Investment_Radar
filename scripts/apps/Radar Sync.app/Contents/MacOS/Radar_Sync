@@ -1,0 +1,22 @@
+#!/bin/bash
+# Radar Sync — one click: commit your data changes and push to GitHub
+# so the phone view (Streamlit Cloud) updates within a minute.
+export PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+cd "$HOME/Investment_Radar" || exit 1
+
+# Anything new to sync?
+if [ -z "$(git status --porcelain 2>/dev/null)" ] && [ -z "$(git log origin/main..main --oneline 2>/dev/null)" ]; then
+    osascript -e 'display notification "Nothing new to sync — phone is already up to date." with title "📡 Radar Sync"'
+    exit 0
+fi
+
+git add -A
+git commit -m "Radar sync $(date '+%Y-%m-%d %H:%M')" >/dev/null 2>&1 || true
+
+if git push origin main >/dev/null 2>&1; then
+    osascript -e 'display notification "Pushed to GitHub — phone view updates in ~1 minute." with title "📡 Radar Sync" sound name "Glass"'
+else
+    osascript -e 'display notification "Push needs GitHub Desktop — opening it. Click Push origin there." with title "📡 Radar Sync" sound name "Basso"'
+    open -a "GitHub Desktop" 2>/dev/null || true
+fi
+exit 0
