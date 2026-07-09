@@ -769,8 +769,38 @@ else:
             kind="mergesort",
         ).reset_index(drop=True)
 
+    # --- Visual borders for grouped view ------------------------------
+    # When grouping is ON, we build a DISPLAY copy of the table with
+    # labeled separator rows inserted wherever a new sector or
+    # sub-sector begins — so each block has an obvious start and end.
+    # The real `ideas` DataFrame stays untouched (the expanders and
+    # save logic below keep using it); separators are stripped back
+    # out before anything is written to disk.
+    if group_by_sector:
+        _sep_rows = []
+        _prev_sec, _prev_sub = object(), object()  # sentinel: never equal
+        for _, _r in ideas.iterrows():
+            _sec = (str(_r.get("sector") or "").strip()) or "Uncategorized"
+            _sub = (str(_r.get("sub_sector") or "").strip()) or "—"
+            if _sec != _prev_sec:
+                _sep = {c: None for c in ideas.columns}
+                _sep["symbol"] = f"📁 {_sec.upper()}"
+                _sep["name"] = "━" * 30
+                _sep_rows.append(_sep)
+                _prev_sec, _prev_sub = _sec, object()
+            if _sub != _prev_sub:
+                _sep = {c: None for c in ideas.columns}
+                _sep["symbol"] = f"└ {_sub}"
+                _sep["name"] = "·" * 20
+                _sep_rows.append(_sep)
+                _prev_sub = _sub
+            _sep_rows.append(_r.to_dict())
+        ideas_display = pd.DataFrame(_sep_rows, columns=list(ideas.columns))
+    else:
+        ideas_display = ideas
+
     edited = st.data_editor(
-        ideas,
+        ideas_display,
         use_container_width=True,
         hide_index=True,
         num_rows="dynamic",  # enables row deletion
@@ -964,6 +994,11 @@ else:
         # into a new row by accident. A row is "real" only if it has a symbol.
         edited_clean = edited[edited["symbol"].astype(str).str.strip() != ""].copy()
         edited_clean["symbol"] = edited_clean["symbol"].astype(str).str.strip()
+        # Strip out the visual separator rows (only present when the
+        # group-by-sector toggle is ON) — they're furniture, not data.
+        edited_clean = edited_clean[
+            ~edited_clean["symbol"].str.startswith(("📁", "└"))
+        ]
 
         # --- Filter-aware merge ------------------------------------
         # When a filter is active, `edited` only contains the VISIBLE
