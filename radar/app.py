@@ -783,13 +783,15 @@ else:
             _sec = (str(_r.get("sector") or "").strip()) or "Uncategorized"
             _sub = (str(_r.get("sub_sector") or "").strip()) or "—"
             if _sec != _prev_sec:
-                _sep = {c: None for c in ideas.columns}
+                # Empty strings (not None) so cells render BLANK,
+                # not as the word "None".
+                _sep = {c: "" for c in ideas.columns}
                 _sep["symbol"] = f"📁 {_sec.upper()}"
                 _sep["name"] = "━" * 30
                 _sep_rows.append(_sep)
                 _prev_sec, _prev_sub = _sec, object()
             if _sub != _prev_sub:
-                _sep = {c: None for c in ideas.columns}
+                _sep = {c: "" for c in ideas.columns}
                 _sep["symbol"] = f"└ {_sub}"
                 _sep["name"] = "·" * 20
                 _sep_rows.append(_sep)
