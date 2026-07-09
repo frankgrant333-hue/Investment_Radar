@@ -87,7 +87,7 @@ def _colored_grade(grade: str) -> str:
 from radar.load_data import load_ideas, DEFAULT_CSV_PATH, write_ideas
 from radar.lookup import lookup_ticker
 from radar.fundamentals import fetch_fundamentals
-from radar.technicals import fetch_history, compute_technicals
+from radar.technicals import fetch_history, compute_technicals, fetch_histories_batch
 from radar.snapshots import take_snapshot, list_snapshots, load_snapshot
 from radar.latest_metrics import (
     write_latest_metrics, read_latest_metrics, metrics_for_symbol,
@@ -1072,6 +1072,14 @@ else:
     def _fmt_sub(s):
         return "N/A" if s is None else f"{s:.0f} ({_colored_grade(grade_letter(s))})"
 
+    # ONE batched download for every visible ticker's price history,
+    # instead of one Yahoo call per ticker. Cached for 30 minutes.
+    @st.cache_data(ttl=1800)
+    def cached_histories_batch(symbols: tuple) -> dict:
+        return fetch_histories_batch(list(symbols))
+
+    _hist_map = cached_histories_batch(tuple(ideas["symbol"]))
+
     for _, row in ideas.iterrows():
         symbol = row["symbol"]
         # Build a label that previews the composite grade right on the
@@ -1079,7 +1087,7 @@ else:
         label = (f"📊 {symbol}  —  composite {row['composite_score']} "
                  f"({row['composite_grade']})  ·  {row['name']}")
         with st.expander(label):
-            history = cached_history(symbol)
+            history = _hist_map.get(symbol)
             if history is None or history.empty:
                 st.warning(
                     f"No price history available for {symbol}. "

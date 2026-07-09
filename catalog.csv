@@ -20,29 +20,29 @@ CRWD,CrowdStrike,stock,Technology,Cybersecurity
 PANW,Palo Alto Networks,stock,Technology,Cybersecurity
 ZS,Zscaler,stock,Technology,Cybersecurity
 FTNT,Fortinet,stock,Technology,Cybersecurity
-GOOGL,Alphabet (Google),stock,Communication,Internet
-META,Meta Platforms,stock,Communication,Internet
-NFLX,Netflix,stock,Communication,Streaming & Media
-DIS,Walt Disney,stock,Communication,Streaming & Media
-T,AT&T,stock,Communication,Telecom
-VZ,Verizon,stock,Communication,Telecom
-TMUS,T-Mobile US,stock,Communication,Telecom
-AMZN,Amazon,stock,Consumer Discretionary,E-commerce
-BABA,Alibaba,stock,Consumer Discretionary,E-commerce
-SHOP,Shopify,stock,Consumer Discretionary,E-commerce
-TSLA,Tesla,stock,Consumer Discretionary,Autos & EV
-F,Ford,stock,Consumer Discretionary,Autos & EV
-GM,General Motors,stock,Consumer Discretionary,Autos & EV
-RIVN,Rivian,stock,Consumer Discretionary,Autos & EV
-HD,Home Depot,stock,Consumer Discretionary,Retail
-NKE,Nike,stock,Consumer Discretionary,Retail
-MCD,McDonald's,stock,Consumer Discretionary,Restaurants
-SBUX,Starbucks,stock,Consumer Discretionary,Restaurants
-PG,Procter & Gamble,stock,Consumer Staples,Household
-KO,Coca-Cola,stock,Consumer Staples,Beverages
-PEP,PepsiCo,stock,Consumer Staples,Beverages
-COST,Costco,stock,Consumer Staples,Retail
-WMT,Walmart,stock,Consumer Staples,Retail
+GOOGL,Alphabet (Google),stock,Communication Services,Internet
+META,Meta Platforms,stock,Communication Services,Internet
+NFLX,Netflix,stock,Communication Services,Streaming & Media
+DIS,Walt Disney,stock,Communication Services,Streaming & Media
+T,AT&T,stock,Communication Services,Telecom
+VZ,Verizon,stock,Communication Services,Telecom
+TMUS,T-Mobile US,stock,Communication Services,Telecom
+AMZN,Amazon,stock,Consumer Cyclical,E-commerce
+BABA,Alibaba,stock,Consumer Cyclical,E-commerce
+SHOP,Shopify,stock,Consumer Cyclical,E-commerce
+TSLA,Tesla,stock,Consumer Cyclical,Autos & EV
+F,Ford,stock,Consumer Cyclical,Autos & EV
+GM,General Motors,stock,Consumer Cyclical,Autos & EV
+RIVN,Rivian,stock,Consumer Cyclical,Autos & EV
+HD,Home Depot,stock,Consumer Cyclical,Retail
+NKE,Nike,stock,Consumer Cyclical,Retail
+MCD,McDonald's,stock,Consumer Cyclical,Restaurants
+SBUX,Starbucks,stock,Consumer Cyclical,Restaurants
+PG,Procter & Gamble,stock,Consumer Defensive,Household
+KO,Coca-Cola,stock,Consumer Defensive,Beverages
+PEP,PepsiCo,stock,Consumer Defensive,Beverages
+COST,Costco,stock,Consumer Defensive,Retail
+WMT,Walmart,stock,Consumer Defensive,Retail
 XOM,Exxon Mobil,stock,Energy,Oil & Gas
 CVX,Chevron,stock,Energy,Oil & Gas
 COP,ConocoPhillips,stock,Energy,Oil & Gas
@@ -51,18 +51,18 @@ SLB,Schlumberger,stock,Energy,Oil Services
 VLO,Valero Energy,stock,Energy,Refining
 MPC,Marathon Petroleum,stock,Energy,Refining
 LNG,Cheniere Energy,stock,Energy,Natural Gas
-JPM,JPMorgan Chase,stock,Financials,Banks
-BAC,Bank of America,stock,Financials,Banks
-WFC,Wells Fargo,stock,Financials,Banks
-GS,Goldman Sachs,stock,Financials,Banks
-MS,Morgan Stanley,stock,Financials,Banks
-V,Visa,stock,Financials,Payments
-MA,Mastercard,stock,Financials,Payments
-PYPL,PayPal,stock,Financials,Payments
-AXP,American Express,stock,Financials,Payments
-BRK-B,Berkshire Hathaway,stock,Financials,Diversified
-COIN,Coinbase,stock,Financials,Crypto Finance
-HOOD,Robinhood,stock,Financials,Crypto Finance
+JPM,JPMorgan Chase,stock,Financial Services,Banks
+BAC,Bank of America,stock,Financial Services,Banks
+WFC,Wells Fargo,stock,Financial Services,Banks
+GS,Goldman Sachs,stock,Financial Services,Banks
+MS,Morgan Stanley,stock,Financial Services,Banks
+V,Visa,stock,Financial Services,Payments
+MA,Mastercard,stock,Financial Services,Payments
+PYPL,PayPal,stock,Financial Services,Payments
+AXP,American Express,stock,Financial Services,Payments
+BRK-B,Berkshire Hathaway,stock,Financial Services,Diversified
+COIN,Coinbase,stock,Financial Services,Crypto Finance
+HOOD,Robinhood,stock,Financial Services,Crypto Finance
 LLY,Eli Lilly,stock,Healthcare,Pharma
 JNJ,Johnson & Johnson,stock,Healthcare,Pharma
 PFE,Pfizer,stock,Healthcare,Pharma
@@ -85,10 +85,10 @@ DE,John Deere,stock,Industrials,Machinery
 UPS,United Parcel Service,stock,Industrials,Transport
 UNP,Union Pacific,stock,Industrials,Transport
 DAL,Delta Air Lines,stock,Industrials,Airlines
-LIN,Linde,stock,Materials,Chemicals
-ALB,Albemarle,stock,Materials,Chemicals & Lithium
-FCX,Freeport-McMoRan,stock,Materials,Copper & Mining
-NEM,Newmont,stock,Materials,Gold Mining
+LIN,Linde,stock,Basic Materials,Chemicals
+ALB,Albemarle,stock,Basic Materials,Chemicals & Lithium
+FCX,Freeport-McMoRan,stock,Basic Materials,Copper & Mining
+NEM,Newmont,stock,Basic Materials,Gold Mining
 PLD,Prologis,stock,Real Estate,Industrial REIT
 AMT,American Tower,stock,Real Estate,Infrastructure REIT
 O,Realty Income,stock,Real Estate,Retail REIT

@@ -59,6 +59,51 @@ def fetch_history(symbol: str, period: str = "1y") -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def fetch_histories_batch(symbols: list[str], period: str = "1y") -> dict:
+    """
+    Pull daily history for MANY tickers in ONE yfinance request.
+
+    Why this exists: fetching 60 tickers one-by-one means 60 separate
+    round-trips to Yahoo — slow everywhere, and on Streamlit Cloud's
+    shared servers Yahoo starts throttling, which can stall the page
+    for minutes. One batched request downloads everything at once.
+
+    Returns
+    -------
+    dict of {symbol: DataFrame}. Symbols that failed are simply
+    absent — callers should use .get(symbol) and handle None.
+    Never raises.
+    """
+    if not symbols:
+        return {}
+    try:
+        raw = yf.download(
+            list(symbols),
+            period=period,
+            interval="1d",
+            group_by="ticker",
+            auto_adjust=True,
+            progress=False,
+            threads=True,
+        )
+    except Exception:
+        return {}
+    if raw is None or len(raw) == 0:
+        return {}
+
+    out = {}
+    for s in symbols:
+        try:
+            # With multiple tickers, columns are grouped per ticker.
+            df = raw[s] if len(symbols) > 1 else raw
+            df = df.dropna(how="all")
+            if not df.empty:
+                out[s] = df
+        except Exception:
+            continue  # this one failed; keep the rest
+    return out
+
+
 # --- 2. The four raw-metric calculators -----------------------------
 #
 # Each takes a price-history DataFrame and returns either a number
