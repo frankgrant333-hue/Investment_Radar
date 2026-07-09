@@ -1,0 +1,62 @@
+symbol,name,asset_type,current_price,past_30d_price,qm,composite_score,composite_grade,value_score,value_grade,tech_score,tech_grade,theme
+XBI,SPDR S&P Biotech ETF,etf,$162.97,$133.22,,99,🟢 A,N/A,⚫ N/A,99,🟢 A,
+HACK,Amplify Cybersecurity ETF,etf,$108.85,$95.42,,99,🟢 A,N/A,⚫ N/A,99,🟢 A,cybersecurity
+XPH,SPDR Pharmaceuticals ETF,etf,$69.40,$58.02,,95,🟢 A,N/A,⚫ N/A,95,🟢 A,
+TSM,Taiwan Semiconductor,stock,$436.98,$411.36,⭐,91,🟢 A,100,🟢 A,83,🟢 B,
+IBB,iShares Biotechnology ETF,etf,$196.34,$169.40,,88,🟢 A,N/A,⚫ N/A,88,🟢 A,biotech
+SMH,VanEck Semiconductor ETF,etf,$593.00,$602.14,,86,🟢 A,N/A,⚫ N/A,86,🟢 A,
+IWM,iShares Russell 2000 ETF,etf,$293.48,$289.82,,85,🟢 B,N/A,⚫ N/A,85,🟢 B,"Broad base, Small cap"
+ARKK,ARK Innovation ETF,etf,$80.16,$77.23,,84,🟢 B,N/A,⚫ N/A,84,🟢 B,Mutual funds
+KRE,State Street SPDR S&P Regional Banking ETF,etf,$73.34,$69.89,,82,🟢 B,N/A,⚫ N/A,82,🟢 B,Financial
+IYT,iShares Transportation Average ETF,etf,$86.59,$82.85,,81,🟢 B,N/A,⚫ N/A,81,🟢 B,Transportation
+NVDA,NVIDIA Corporation,stock,$204.12,$214.86,⭐,80,🟢 B,72,🟢 B,88,🟢 A,AI
+XLE,Energy Select SPDR,etf,$55.60,$57.44,,78,🟢 B,N/A,⚫ N/A,78,🟢 B,
+XLV,State Street Health Care Select Sector SPDR ETF,etf,$162.30,$147.86,,77,🟢 B,N/A,⚫ N/A,77,🟢 B,biotech
+ITA,iShares U.S. Aerospace & Defense ETF,etf,$239.63,$229.33,,77,🟢 B,N/A,⚫ N/A,77,🟢 B,defense
+GOOGL,Alphabet (Google),stock,$361.92,$388.65,,77,🟢 B,64,🟡 C,89,🟢 A,
+SPY,State Street SPDR S&P 500 ETF Trust,etf,$745.40,$748.66,,76,🟢 B,N/A,⚫ N/A,76,🟢 B,index
+XLF,State Street Financial Select Sector SPDR ETF,etf,$54.97,$51.67,,76,🟢 B,N/A,⚫ N/A,76,🟢 B,Financial
+XAR,SPDR Aerospace & Defense ETF,etf,$273.83,$276.50,,73,🟢 B,N/A,⚫ N/A,73,🟢 B,
+GD,General Dynamics,stock,$374.31,$343.13,,71,🟢 B,56,🟡 C,85,🟢 A,
+ICLN,iShares Global Clean Energy ETF,etf,$19.05,$22.87,,70,🟢 B,N/A,⚫ N/A,70,🟢 B,Energy
+AMZN,Amazon,stock,$243.62,$265.29,,69,🟡 C,48,🟠 D,91,🟢 A,
+ASML,ASML Holding,stock,"$1,768.65","$1,632.03",,69,🟡 C,58,🟡 C,81,🟢 B,
+AMD,"Advanced Micro Devices, Inc.",stock,$517.41,$503.89,,67,🟡 C,59,🟡 C,76,🟢 B,AI
+ARKW,ARK Next Generation Internet ETF,etf,$145.87,$146.03,,66,🟡 C,N/A,⚫ N/A,66,🟡 C,Internet
+MU,"Micron Technology, Inc.",stock,$948.80,$895.74,,62,🟡 C,72,🟢 B,52,🟡 C,chips
+EDIT,Editas Medicine,stock,$3.67,$3.08,,62,🟡 C,38,🟠 D,87,🟢 A,
+NBGIF,National Bank of Greece (OTC),stock,$18.00,$16.00,,61,🟡 C,32,🟠 D,91,🟢 A,
+NVS,Novartis,stock,$155.17,$150.80,,59,🟡 C,42,🟠 D,77,🟢 B,
+RACE,Ferrari,stock,$375.03,$329.91,,59,🟡 C,67,🟡 C,51,🟡 C,
+MRVL,"Marvell Technology, Inc.",stock,$231.71,$208.26,,57,🟡 C,64,🟡 C,50,🟡 C,"AI, cloud infrastructure"
+RTX,RTX (Raytheon),stock,$194.91,$178.97,,56,🟡 C,37,🟠 D,76,🟢 B,
+PHM,PulteGroup,stock,$122.94,$117.59,,55,🟡 C,75,🟢 B,36,🟠 D,
+DHI,D.R. Horton,stock,$148.51,$145.60,,53,🟡 C,69,🟡 C,37,🟠 D,
+BA,Boeing,stock,$224.95,$218.90,,53,🟡 C,29,🟠 D,76,🟢 B,
+MSFT,Microsoft,stock,$383.34,$416.03,,52,🟡 C,55,🟡 C,48,🟠 D,
+INFQ,"Infleqtion, Inc.",stock,$11.51,$15.88,,52,🟡 C,95,🟢 A,8,🔴 F,"quantam, thrump"
+IBM,International Business Machines Corporation,stock,$302.05,$250.69,,51,🟡 C,31,🟠 D,72,🟢 B,"quantam, thrump"
+NBIS,Nebius Group N.V.,stock,$216.48,$208.06,,49,🟠 D,49,🟠 D,50,🟡 C,Internet
+INTC,Intel Corporation,stock,$110.24,$123.52,,49,🟠 D,45,🟠 D,53,🟡 C,chips
+TSLA,Tesla,stock,$394.06,$433.59,,48,🟠 D,49,🟠 D,46,🟠 D,
+LEN,Lennar,stock,$83.59,$89.29,,46,🟠 D,57,🟡 C,35,🟠 D,
+BTC,Grayscale Bitcoin Mini Trust ETF,etf,$27.51,$33.56,,46,🟠 D,N/A,⚫ N/A,46,🟠 D,Cryptocurrency
+SBUX,Starbucks,stock,$103.87,$101.42,,45,🟠 D,4,🔴 F,86,🟢 A,
+NOC,Northrop Grumman,stock,$545.11,$556.80,,45,🟠 D,41,🟠 D,49,🟠 D,
+XEL,Xcel Energy Inc.,stock,$79.62,$80.18,,44,🟠 D,12,🔴 F,77,🟢 B,Energy
+PHO,Invesco Water Resources ETF,etf,$68.11,$65.72,,44,🟠 D,N/A,⚫ N/A,44,🟠 D,Water
+BP,BP,stock,$39.21,$42.65,,42,🟠 D,39,🟠 D,45,🟠 D,
+XOM,Exxon Mobil,stock,$141.13,$149.81,,42,🟠 D,40,🟠 D,45,🟠 D,
+CVX,Chevron,stock,$175.97,$184.71,,42,🟠 D,39,🟠 D,44,🟠 D,
+XRP,Bitwise XRP ETF,stock,$12.19,$14.87,,41,🟠 D,N/A,⚫ N/A,41,🟠 D,Cryptocurrency
+XHB,SPDR Homebuilders ETF,etf,$106.04,$102.19,,41,🟠 D,N/A,⚫ N/A,41,🟠 D,
+LMT,Lockheed Martin,stock,$527.96,$532.90,,40,🟠 D,32,🟠 D,47,🟠 D,
+ITB,iShares U.S. Home Construction,etf,$95.91,$91.94,,39,🟠 D,N/A,⚫ N/A,39,🟠 D,
+NIO,NIO,stock,$4.90,$5.26,,36,🟠 D,28,🟠 D,44,🟠 D,
+TAN,Invesco Solar ETF,etf,$54.14,$68.96,,36,🟠 D,N/A,⚫ N/A,36,🟠 D,
+RKLB,Rocket Lab Corporation,stock,$83.35,$143.20,,35,🟠 D,51,🟡 C,20,🔴 F,"Aerospace, Defense"
+QBTS,D-Wave Quantum Inc.,stock,$20.64,$27.82,,33,🟠 D,53,🟡 C,13,🔴 F,"quantam, thrump"
+RGTI,"Rigetti Computing, Inc.",stock,$16.92,$25.07,,29,🟠 D,53,🟡 C,5,🔴 F,"quantam, thrump"
+SNGX,Soligenix,stock,$0.37,$0.51,,26,🟠 D,51,🟡 C,1,🔴 F,
+IREN,IREN Limited,stock,$43.01,$59.78,,24,🔴 F,37,🟠 D,10,🔴 F,Financial
+ALBKF,Alpha Services (OTC),stock,N/A,N/A,,N/A,⚫ N/A,N/A,⚫ N/A,N/A,⚫ N/A,
