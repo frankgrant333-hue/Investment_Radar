@@ -88,6 +88,7 @@ from radar.load_data import load_ideas, DEFAULT_CSV_PATH, write_ideas
 from radar.lookup import lookup_ticker
 from radar.fundamentals import fetch_fundamentals
 from radar.technicals import fetch_history, compute_technicals, fetch_histories_batch
+from radar.nash import pct_off_52wk_high, dca_state, spy_too_hot, fmt_pct_off
 from radar.snapshots import take_snapshot, list_snapshots, load_snapshot
 from radar.latest_metrics import (
     write_latest_metrics, read_latest_metrics, metrics_for_symbol,
@@ -101,6 +102,18 @@ from radar.scoring import (
 )
 from radar.money_flow import compute_sector_flow, top_sectors
 from radar.catalog import load_catalog
+
+# --- PDF report (Phase 4.5) -------------------------------------------
+# The report builder needs the `reportlab` library. If it isn't
+# installed yet (fresh venv, or Streamlit Cloud before requirements.txt
+# was updated), we don't want the WHOLE dashboard to crash — we just
+# hide the PDF button and show a hint instead. try/except ImportError
+# is the standard Python pattern for "optional feature".
+try:
+    from radar.report import build_pdf_bytes, build_pdf_file
+    REPORT_READY = True
+except ImportError:
+    REPORT_READY = False
 
 
 # --- 1a. Cached fundamentals fetcher --------------------------------
@@ -482,6 +495,7 @@ if len(ideas) > 0:
     c_scores, c_grades = [], []
     c_numeric = []   # hidden float column for sorting (strings sort wrong)
     cur_prices, past_prices = [], []   # display-only price columns
+    off_high_strs, dca_states = [], []  # Nash Dip Meter (Phase 2)
     qm_stars = []    # ⭐ when both value ≥ 70 AND tech ≥ 70 (Phase 4.3)
     qm_flags = []    # hidden boolean column for filtering
     metrics_last_computed_at = ""   # populated on hosted view for the "last synced" caption
@@ -506,6 +520,7 @@ if len(ideas) > 0:
                 c_scores.append("N/A"); c_grades.append("N/A")
                 c_numeric.append(float("-inf"))
                 cur_prices.append("N/A"); past_prices.append("N/A")
+                off_high_strs.append("N/A"); dca_states.append("")
                 qm_stars.append(""); qm_flags.append(False)
                 continue
             v_score = value_score({
@@ -531,6 +546,10 @@ if len(ideas) > 0:
             c_numeric.append(c_score if c_score is not None else float("-inf"))
             cur_prices.append(m["current_price"] or "N/A")
             past_prices.append(m["past_30d_price"] or "N/A")
+            # Nash fields were computed on the Mac and stored —
+            # just display them (same bridge as the scores above).
+            off_high_strs.append(fmt_pct_off(m.get("pct_off_52wk_high")))
+            dca_states.append(m.get("dca_state") or "")
             qm_hit = (
                 v_score is not None and v_score >= 70 and
                 t_score is not None and t_score >= 70
@@ -548,6 +567,9 @@ if len(ideas) > 0:
         metrics_buffer = []
         with st.spinner("Fetching fundamentals + price history (cached for 30 min)…"):
             spy_history_for_metrics = cached_history("SPY")
+            # Nash market check (Phase 2): SPY +20% over 30 calendar
+            # days = TOO HOT, which outranks any stock-level DIP badge.
+            _market_hot = spy_too_hot(spy_history_for_metrics)
             for _, row in ideas.iterrows():
                 v_score, v_grade = cached_score_for(row["symbol"], row["asset_type"])
                 t_score, t_grade = cached_tech_score_for(row["symbol"])
@@ -586,6 +608,13 @@ if len(ideas) > 0:
 
                 # Collect the RAW numbers Yahoo gave us so the phone view
                 # can score them without hitting Yahoo's rate limits.
+                # Nash Dip Meter (Phase 2) — from the history already
+                # fetched above; None (short/missing history) -> "N/A".
+                _pct_off = pct_off_52wk_high(history)
+                _state = dca_state(_pct_off, row["symbol"], _market_hot)
+                off_high_strs.append(fmt_pct_off(_pct_off))
+                dca_states.append(_state)
+
                 funds_raw = cached_fundamentals(row["symbol"], row["asset_type"])
                 metrics_buffer.append({
                     "symbol":             row["symbol"],
@@ -600,6 +629,8 @@ if len(ideas) > 0:
                     "dist_from_20d_high": tech_raw.get("dist_from_20d_high"),
                     "rs_vs_spy":          tech_raw.get("rs_vs_spy"),
                     "atr_pct":            tech_raw.get("atr_pct"),
+                    "pct_off_52wk_high":  _pct_off,
+                    "dca_state":          _state,
                 })
         # After the loop: persist the metrics so the phone view can read
         # them once Frank pushes to GitHub. Non-fatal if it fails.
@@ -608,6 +639,8 @@ if len(ideas) > 0:
         except Exception:
             pass
     ideas["qm"]               = qm_stars
+    ideas["pct_off_high"]     = off_high_strs
+    ideas["dca_state"]        = dca_states
     ideas["current_price"]    = cur_prices
     ideas["past_30d_price"]   = past_prices
     ideas["composite_score"]  = c_scores
@@ -815,6 +848,7 @@ else:
             "qm",
             # Prices next — left edge, before the symbol.
             "current_price", "past_30d_price",
+            "pct_off_high", "dca_state",
             "symbol",
             "composite_score", "composite_grade",
             "value_score", "value_grade",
@@ -850,6 +884,24 @@ else:
                 help="Closing price from 30 TRADING days ago "
                      "(roughly 6 calendar weeks). N/A if the ticker is "
                      "newer than 30 trading days.",
+            ),
+            # --- Nash Dip Meter (Phase 2) ---------------------------
+            "pct_off_high": st.column_config.TextColumn(
+                "pct_off_high",
+                disabled=True,
+                help="How far below the 52-week high (highest daily "
+                     "CLOSE in the trailing 252 trading days). Always "
+                     "0% or negative. The Nash dip trigger for a stock "
+                     "is -20% or more.",
+            ),
+            "dca_state": st.column_config.TextColumn(
+                "dca_state",
+                disabled=True,
+                help="Tom Nash Double Down DCA state — only for stocks "
+                     "on the quality scorecard. DIP — ACCELERATE: stock "
+                     "20%+ off its high. TOO HOT — SLOW DOWN: SPY up "
+                     "20%+ in 30 days (outranks a stock dip). Blank: "
+                     "no quality score for this name.",
             ),
             # --- Yahoo-derived columns (unlockable via Edit toggle) -
             # symbol stays locked always — it's the row's identity.
@@ -925,11 +977,11 @@ else:
 
     # Initialize action flags so the handler blocks below always
     # have something to check — even when we hide buttons on hosted.
-    save_clicked = refresh_clicked = snap_clicked = False
+    save_clicked = refresh_clicked = snap_clicked = pdf_clicked = False
 
     if IS_HOSTED:
-        # Phone view: only Refresh (cache clear) is meaningful.
-        col_refresh, col_hint = st.columns([1, 4])
+        # Phone view: Refresh (cache clear) + PDF download.
+        col_refresh, col_pdf, col_hint = st.columns([1, 1, 3])
         with col_refresh:
             refresh_clicked = st.button(
                 "🔄 Refresh from Yahoo",
@@ -937,13 +989,28 @@ else:
                 help="Clears the 30-minute cache and re-pulls every "
                      "ticker's data from Yahoo.",
             )
+        with col_pdf:
+            # On the phone there's no local disk to save to, so we use
+            # st.download_button: it builds the PDF bytes in memory and
+            # hands them straight to the browser as a download.
+            if REPORT_READY:
+                st.download_button(
+                    "📄 PDF report",
+                    data=build_pdf_bytes(),
+                    file_name=f"Radar_Report_{date.today().isoformat()}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    help="Download the full radar as a colorful PDF — "
+                         "Top 10 picks plus every sector & sub-sector.",
+                )
         with col_hint:
             st.caption(
                 "👉 Read-only view. Sorted by **composite_score**. "
                 "To make changes, edit on your Mac and push to GitHub."
             )
     else:
-        col_save, col_refresh, col_snap, col_hint = st.columns([1, 1, 1, 2])
+        col_save, col_refresh, col_snap, col_pdf, col_hint = st.columns(
+            [1, 1, 1, 1, 2])
         with col_save:
             save_clicked = st.button(
                 "💾 Save changes",
@@ -966,6 +1033,20 @@ else:
                      "look back at 'what did my radar say on June 1?' weeks "
                      "or months later. Same-day re-clicks overwrite.",
             )
+        with col_pdf:
+            # On the Mac we build the PDF to reports/ and pop it open in
+            # Preview — one click, report on screen. (The phone view
+            # uses a download button instead; see the IS_HOSTED branch.)
+            if REPORT_READY:
+                pdf_clicked = st.button(
+                    "📄 PDF report",
+                    use_container_width=True,
+                    help="Build a colorful PDF of the whole radar — Top 10 "
+                         "picks plus every sector & sub-sector — save it "
+                         "to reports/ and open it.",
+                )
+            else:
+                st.caption("📄 PDF needs `pip install reportlab`")
         with col_hint:
             st.caption(
                 "👉 Table sorted by **composite_score** (highest first). "
@@ -990,6 +1071,21 @@ else:
             st.success(f"📸 Snapshot saved to **{path.name}** ✓")
         except Exception as err:
             st.error(f"Couldn't write snapshot: {err}")
+
+    if pdf_clicked:
+        try:
+            with st.spinner("Building PDF report…"):
+                pdf_path = build_pdf_file()
+            # `open` is the Mac command that says "open this file with
+            # whatever app normally handles it" — for a .pdf, Preview.
+            # We only reach this branch on the Mac (IS_HOSTED is False),
+            # so it's safe to call.
+            import subprocess
+            subprocess.run(["open", str(pdf_path)], check=False)
+            st.success(f"📄 Report saved to **reports/{pdf_path.name}** "
+                       "and opened in Preview ✓")
+        except Exception as err:
+            st.error(f"Couldn't build the PDF report: {err}")
 
     if save_clicked:
         # Filter out any blank rows that might have appeared if you tabbed
@@ -1197,7 +1293,7 @@ else:
             else:
                 close_90d, pct_90d = None, None
 
-            col_a, col_b, col_c = st.columns(3)
+            col_a, col_b, col_c, col_d = st.columns(4)
             col_a.metric("Latest close", f"${last_close:,.2f}")
             col_b.metric(
                 "90 days ago",
@@ -1207,6 +1303,9 @@ else:
                 "90-day change",
                 "N/A" if pct_90d is None else f"{pct_90d:+.1f}%",
             )
+            col_d.metric("% off 52-wk high", row["pct_off_high"])
+            if row["dca_state"]:
+                st.markdown(f"**DCA state (Nash):** {row['dca_state']}")
 
 
     # --- 7. Past snapshots viewer (Phase 4.4b) ---------------------

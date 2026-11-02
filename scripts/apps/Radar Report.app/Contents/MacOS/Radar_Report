@@ -1,0 +1,38 @@
+#!/bin/bash
+# Radar Report — build today's colorful PDF report and open it.
+#
+# What happens when you double-click:
+#   1. Activates the project's venv.
+#   2. First run only: installs the `reportlab` PDF library if missing.
+#   3. Runs `python -m radar.report`, which scores every ticker from
+#      latest_metrics.csv (same math as the dashboard) and writes
+#      reports/Radar_Report_YYYY-MM-DD.pdf.
+#   4. Opens the PDF in Preview and pings a notification.
+
+LOG_DIR="$HOME/Investment_Radar/logs"
+mkdir -p "$LOG_DIR"
+
+cd "$HOME/Investment_Radar" || exit 1
+
+if [ ! -d "venv" ]; then
+    osascript -e 'display notification "venv/ missing — see USER_GUIDE.md" with title "📄 Radar Report" sound name "Basso"'
+    exit 1
+fi
+source venv/bin/activate
+
+# First run only: make sure the PDF library is installed in the venv.
+if ! python -c "import reportlab" 2>/dev/null; then
+    osascript -e 'display notification "First run — installing the PDF library (takes ~30 sec)…" with title "📄 Radar Report"'
+    pip install -q reportlab >>"$LOG_DIR/report.log" 2>&1
+fi
+
+# Build the report. arch -arm64 keeps us on Apple-Silicon-native
+# Python, matching how the dashboard itself is launched.
+if arch -arm64 python -m radar.report >>"$LOG_DIR/report.log" 2>&1; then
+    PDF="$HOME/Investment_Radar/reports/Radar_Report_$(date +%F).pdf"
+    open "$PDF"
+    osascript -e 'display notification "PDF built — opening now." with title "📄 Radar Report" sound name "Glass"'
+else
+    osascript -e 'display notification "Build failed — see logs/report.log" with title "📄 Radar Report" sound name "Basso"'
+fi
+exit 0

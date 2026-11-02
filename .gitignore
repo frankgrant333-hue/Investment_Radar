@@ -27,3 +27,6 @@ __pycache__/
 
 # --- Runtime logs and process IDs (machine-local, never commit) ---
 logs/
+
+# --- Generated PDF reports (rebuilt on demand — 📄 button or Radar Report icon) ---
+reports/

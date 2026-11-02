@@ -17,3 +17,4 @@ pandas>=2.0,<3.0     # tables of data — the CSV becomes a pandas DataFrame
 numpy>=1.24          # arithmetic under pandas — pinned so pandas plays nice
 yfinance>=0.2.40     # free Yahoo Finance data — price history + fundamentals
 streamlit>=1.30      # turns this Python project into a web dashboard
+reportlab>=4.0       # builds the colorful PDF report (📄 PDF report button)

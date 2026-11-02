@@ -56,6 +56,10 @@ METRICS_COLUMNS = [
     "dist_from_20d_high",
     "rs_vs_spy",
     "atr_pct",
+    # Nash Dip Meter (Phase 2) — computed on the Mac, displayed
+    # as-is on the hosted phone view (no Yahoo calls there).
+    "pct_off_52wk_high",   # float, % below 52-wk high (always <= 0)
+    "dca_state",           # "" / NORMAL / DIP — ACCELERATE / TOO HOT — SLOW DOWN
 ]
 
 
@@ -150,4 +154,7 @@ def metrics_for_symbol(df: pd.DataFrame, symbol: str) -> Optional[dict]:
         "dist_from_20d_high": _parse_optional_float(row.get("dist_from_20d_high")),
         "rs_vs_spy":          _parse_optional_float(row.get("rs_vs_spy")),
         "atr_pct":            _parse_optional_float(row.get("atr_pct")),
+        # Nash Dip Meter (Phase 2)
+        "pct_off_52wk_high":  _parse_optional_float(row.get("pct_off_52wk_high")),
+        "dca_state":          str(row.get("dca_state") or "").strip(),
     }

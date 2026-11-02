@@ -31,7 +31,7 @@ if [ ! -d "$APPS_DIR" ]; then
     exit 1
 fi
 
-for app in "Radar Start.app" "Radar Stop.app" "Radar Refresh.app"; do
+for app in "Radar Start.app" "Radar Stop.app" "Radar Refresh.app" "Radar Report.app"; do
     src="$APPS_DIR/$app"
     dst="$DESKTOP/$app"
     if [ ! -d "$src" ]; then
@@ -55,10 +55,11 @@ sleep 1
 echo ""
 echo "📡  Done!"
 echo ""
-echo "Three radar-shaped app icons should now be on your Desktop:"
+echo "Radar-shaped app icons should now be on your Desktop:"
 echo "  🟢  Radar Start.app     — launch the dashboard"
 echo "  🔴  Radar Stop.app      — shut it down cleanly"
 echo "  🔵  Radar Refresh.app   — restart with fresh data"
+echo "  📄  Radar Report.app    — build + open the PDF report"
 echo ""
 echo "Double-click any of them any time. They run silently —"
 echo "no Terminal window opens or lingers. A macOS notification"
