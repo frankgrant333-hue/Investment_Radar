@@ -63,6 +63,9 @@ METRICS_COLUMNS = [
     # Weinstein stage + Vermeulen posture (Phase 3) — display labels
     "stage",               # "Stage 1".."Stage 4", or "" (short history)
     "market_posture",      # full posture banner text (same every row)
+    # Extended brake (Phase 4)
+    "pct_above_50d",       # float, % above (+) / below (-) the 50d SMA
+    "extended",            # bool, True when > +8% above the 50d SMA
 ]
 
 
@@ -163,4 +166,7 @@ def metrics_for_symbol(df: pd.DataFrame, symbol: str) -> Optional[dict]:
         # Weinstein stage + posture (Phase 3)
         "stage":              str(row.get("stage") or "").strip(),
         "market_posture":     str(row.get("market_posture") or "").strip(),
+        # Extended brake (Phase 4)
+        "pct_above_50d":      _parse_optional_float(row.get("pct_above_50d")),
+        "extended":           _parse_optional_bool(row.get("extended")) or False,
     }

@@ -102,6 +102,31 @@ def _bits(name: str, m: dict | None) -> str:
             f"{'above' if m['above200'] else 'below'} 200d")
 
 
+# ---------- Extended / don't chase (Phase 4) ----------
+# From Frank's Swing Trading Rules sheet (Minervini): a name more than
+# +8% above its 50-day simple moving average is EXTENDED — don't chase.
+# (The Divergence Alert's climax flag at +25% is a different, more
+# extreme warning and is unchanged.)
+
+EXTENDED_PCT = 8.0
+
+
+def pct_above_50d(history) -> float | None:
+    """% above (+) or below (-) the 50-day SMA. None under 50 closes —
+    the UI shows "n/a", never a guess."""
+    if history is None or len(history) == 0 or "Close" not in history:
+        return None
+    closes = history["Close"].dropna()
+    if len(closes) < 50:
+        return None
+    return (float(closes.iloc[-1]) / float(closes.tail(50).mean()) - 1) * 100
+
+
+def is_extended(pct) -> bool:
+    """EXTENDED means strictly more than +8% above the 50-day SMA."""
+    return pct is not None and pct > EXTENDED_PCT
+
+
 def posture_line(p: dict) -> str:
     """The full banner text, same wording as the Divergence report:
     'CAUTION — SPY below 50d / above 200d · QQQ ... — Trader sleeve: ...'"""

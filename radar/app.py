@@ -89,7 +89,8 @@ from radar.lookup import lookup_ticker
 from radar.fundamentals import fetch_fundamentals
 from radar.technicals import fetch_history, compute_technicals, fetch_histories_batch
 from radar.nash import pct_off_52wk_high, dca_state, spy_too_hot, fmt_pct_off
-from radar.stage import weinstein_stage, market_posture, posture_line
+from radar.stage import (weinstein_stage, market_posture, posture_line,
+                         pct_above_50d, is_extended)
 from radar.snapshots import take_snapshot, list_snapshots, load_snapshot
 from radar.latest_metrics import (
     write_latest_metrics, read_latest_metrics, metrics_for_symbol,
@@ -185,7 +186,9 @@ def cached_tech_score_for(symbol: str) -> tuple[float | None, str]:
     history = cached_history(symbol)
     spy_history = cached_history("SPY")    # cache hit after first call
     metrics = compute_technicals(history, spy_history)
-    score = tech_score(metrics)
+    # Extended brake (Phase 4): >+8% above the 50-day SMA zeroes the
+    # distance-from-20d-high component (see scoring.tech_score).
+    score = tech_score(metrics, extended=is_extended(pct_above_50d(history)))
     return score, grade_letter(score)
 
 
@@ -521,6 +524,7 @@ if len(ideas) > 0:
     cur_prices, past_prices = [], []   # display-only price columns
     off_high_strs, dca_states = [], []  # Nash Dip Meter (Phase 2)
     stage_strs = []  # Weinstein stage (Phase 3)
+    ext_strs, pct50_vals = [], []  # Extended brake (Phase 4)
     qm_stars = []    # ⭐ when both value ≥ 70 AND tech ≥ 70 (Phase 4.3)
     qm_flags = []    # hidden boolean column for filtering
     metrics_last_computed_at = ""   # populated on hosted view for the "last synced" caption
@@ -547,6 +551,7 @@ if len(ideas) > 0:
                 cur_prices.append("N/A"); past_prices.append("N/A")
                 off_high_strs.append("N/A"); dca_states.append("")
                 stage_strs.append("n/a")
+                ext_strs.append(""); pct50_vals.append(None)
                 qm_stars.append(""); qm_flags.append(False)
                 continue
             v_score = value_score({
@@ -561,7 +566,7 @@ if len(ideas) > 0:
                 "dist_from_20d_high": m["dist_from_20d_high"],
                 "rs_vs_spy":          m["rs_vs_spy"],
                 "atr_pct":            m["atr_pct"],
-            })
+            }, extended=m.get("extended") or False)
             c_score = composite_score(v_score, t_score)
             v_scores.append("N/A" if v_score is None else f"{round(v_score)}")
             v_grades.append(_colored_grade(grade_letter(v_score)))
@@ -577,6 +582,8 @@ if len(ideas) > 0:
             off_high_strs.append(fmt_pct_off(m.get("pct_off_52wk_high")))
             dca_states.append(m.get("dca_state") or "")
             stage_strs.append(m.get("stage") or "n/a")
+            pct50_vals.append(m.get("pct_above_50d"))
+            ext_strs.append("⚠️ EXTENDED" if m.get("extended") else "")
             qm_hit = (
                 v_score is not None and v_score >= 70 and
                 t_score is not None and t_score >= 70
@@ -644,6 +651,11 @@ if len(ideas) > 0:
                 # Weinstein stage (Phase 3) — display label only.
                 _stage = weinstein_stage(history)
                 stage_strs.append(_stage["short"] if _stage else "n/a")
+                # Extended brake (Phase 4) — same history, no new fetch.
+                _p50 = pct_above_50d(history)
+                _ext = is_extended(_p50)
+                pct50_vals.append(_p50)
+                ext_strs.append("⚠️ EXTENDED" if _ext else "")
 
                 funds_raw = cached_fundamentals(row["symbol"], row["asset_type"])
                 metrics_buffer.append({
@@ -663,6 +675,8 @@ if len(ideas) > 0:
                     "dca_state":          _state,
                     "stage":              _stage["short"] if _stage else "",
                     "market_posture":     _posture_text,
+                    "pct_above_50d":      _p50,
+                    "extended":           _ext,
                 })
         # After the loop: persist the metrics so the phone view can read
         # them once Frank pushes to GitHub. Non-fatal if it fails.
@@ -675,6 +689,8 @@ if len(ideas) > 0:
     ideas["dca_state"]        = dca_states
     ideas["stage"]            = stage_strs
     ideas["market_posture"]   = _posture_text
+    ideas["extended"]         = ext_strs
+    ideas["pct_above_50d"]    = pct50_vals
     ideas["current_price"]    = cur_prices
     ideas["past_30d_price"]   = past_prices
     ideas["composite_score"]  = c_scores
@@ -882,7 +898,7 @@ else:
             "qm",
             # Prices next — left edge, before the symbol.
             "current_price", "past_30d_price",
-            "pct_off_high", "dca_state", "stage",
+            "pct_off_high", "dca_state", "stage", "extended",
             "symbol",
             "composite_score", "composite_grade",
             "value_score", "value_grade",
@@ -947,6 +963,17 @@ else:
                      "declining, Stage 1 = basing. n/a = under ~170 "
                      "days of history. Display only — scores "
                      "unchanged.",
+            ),
+            # --- Extended brake (Phase 4) ---------------------------
+            "extended": st.column_config.TextColumn(
+                "extended",
+                disabled=True,
+                help="⚠️ EXTENDED when the close is more than +8% "
+                     "above the 50-day average — don't chase. The "
+                     "distance-from-20d-high part of the Tech Score "
+                     "earns zero while extended, so hot names stop "
+                     "getting momentum points for the very thing "
+                     "that makes them risky to buy.",
             ),
             # --- Yahoo-derived columns (unlockable via Edit toggle) -
             # symbol stays locked always — it's the row's identity.
@@ -1018,6 +1045,11 @@ else:
                 help="Anything else worth remembering.",
             ),
         },
+    )
+    # Grade honesty note (Phase 4, Part C) — text only.
+    st.caption(
+        "ETF and crypto grades are Tech-only (no Value Score) and are "
+        "not the same claim as a stock's blended Value + Tech grade."
     )
 
     # Initialize action flags so the handler blocks below always
@@ -1352,6 +1384,13 @@ else:
             if row["dca_state"]:
                 st.markdown(f"**DCA state (Nash):** {row['dca_state']}")
             st.markdown(f"**Weinstein stage:** {row['stage']}")
+            _p50_row = row["pct_above_50d"]
+            if _p50_row is None or pd.isna(_p50_row):
+                st.markdown("**vs 50-day SMA:** n/a")
+            else:
+                _ext_badge = (" — ⚠️ EXTENDED (don't chase; Tech Score "
+                              "momentum points withheld)" if row["extended"] else "")
+                st.markdown(f"**vs 50-day SMA:** {_p50_row:+.1f}%{_ext_badge}")
 
 
     # --- 7. Past snapshots viewer (Phase 4.4b) ---------------------

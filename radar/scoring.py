@@ -260,7 +260,7 @@ def score_atr_pct(value):
 
 # --- 4d. Public function: average the four tech sub-scores ---------
 
-def tech_score(metrics: dict):
+def tech_score(metrics: dict, extended: bool = False):
     """
     Take a dict of raw technical metrics and return the averaged
     0-100 Tech Score.
@@ -279,9 +279,18 @@ def tech_score(metrics: dict):
     Tech Score works for stocks, ETFs, AND crypto — unlike Value
     Score, which is fundamentals-only.
     """
+    dist_sub = score_dist_from_20d_high(metrics.get("dist_from_20d_high"))
+    if extended:
+        # Extended brake (Phase 4): a name more than +8% above its
+        # 50-day SMA must not earn momentum points for sitting at its
+        # highs — that is the very thing that makes it dangerous to
+        # chase. The component earns ZERO (it still counts in the
+        # average). Stage, relative strength, and ATR are unchanged,
+        # as are Value Score and the Composite formula.
+        dist_sub = 0.0
     sub_scores = [
         score_stage_2(metrics.get("stage_2")),
-        score_dist_from_20d_high(metrics.get("dist_from_20d_high")),
+        dist_sub,
         score_rs_vs_spy(metrics.get("rs_vs_spy")),
         score_atr_pct(metrics.get("atr_pct")),
     ]

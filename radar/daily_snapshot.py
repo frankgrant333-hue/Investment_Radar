@@ -33,7 +33,8 @@ from radar.scoring import (
 )
 from radar.snapshots import take_snapshot
 from radar.nash import pct_off_52wk_high, dca_state, spy_too_hot, fmt_pct_off
-from radar.stage import weinstein_stage, market_posture, posture_line
+from radar.stage import (weinstein_stage, market_posture, posture_line,
+                         pct_above_50d, is_extended)
 
 
 def _format_price(close: float | None) -> str:
@@ -76,6 +77,7 @@ def enrich_and_snapshot() -> None:
     qm_stars = []
     off_highs, dca_states = [], []   # Nash Dip Meter (Phase 2)
     stage_strs = []                  # Weinstein stage (Phase 3)
+    pct50_strs, ext_strs = [], []    # Extended brake (Phase 4)
 
     print("\nScoring each ticker:")
     for _, row in ideas.iterrows():
@@ -93,9 +95,13 @@ def enrich_and_snapshot() -> None:
         if history is None or history.empty:
             t_s = None
             cur_close, past_close = None, None
+            _p50, _ext = None, False
         else:
             metrics = compute_technicals(history, spy_history)
-            t_s = tech_score(metrics)
+            # Extended brake (Phase 4)
+            _p50 = pct_above_50d(history)
+            _ext = is_extended(_p50)
+            t_s = tech_score(metrics, extended=_ext)
             cur_close = float(history["Close"].iloc[-1])
             past_close = (
                 float(history["Close"].iloc[-30])
@@ -109,6 +115,8 @@ def enrich_and_snapshot() -> None:
         dca_states.append(dca_state(pct_off, symbol, market_hot))
         _stage = weinstein_stage(history)
         stage_strs.append(_stage["short"] if _stage else "n/a")
+        pct50_strs.append("n/a" if _p50 is None else f"{_p50:+.1f}%")
+        ext_strs.append("EXTENDED" if _ext else "")
 
         # ---- Composite + Q+M ----
         c_s = composite_score(v_s, t_s)
@@ -140,6 +148,8 @@ def enrich_and_snapshot() -> None:
     ideas["dca_state"]       = dca_states
     ideas["stage"]           = stage_strs
     ideas["market_posture"]  = posture_text
+    ideas["pct_above_50d"]   = pct50_strs
+    ideas["extended"]        = ext_strs
     ideas["qm"]              = qm_stars
     ideas["composite_score"] = c_scores_d
     ideas["composite_grade"] = c_grades_d

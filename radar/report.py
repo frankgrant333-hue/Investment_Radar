@@ -121,7 +121,7 @@ def build_report_dataframe() -> pd.DataFrame:
                 "dist_from_20d_high": m["dist_from_20d_high"],
                 "rs_vs_spy":          m["rs_vs_spy"],
                 "atr_pct":            m["atr_pct"],
-            })
+            }, extended=m.get("extended") or False)
             c = composite_score(v, t)
             price = m["current_price"] or "N/A"
 
@@ -385,6 +385,14 @@ def build_pdf(target) -> None:
     story.append(Table(leg_data,
                        colWidths=[1.2 * inch] + [1.0 * inch] * 5,
                        style=TableStyle(leg_style)))
+
+    # Grade honesty note (Phase 4, Part C) — text only.
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(
+        "ETF and crypto grades are Tech-only (no Value Score) and are "
+        "not the same claim as a stock's blended Value + Tech grade.",
+        ParagraphStyle("GradeNote", parent=cell, fontSize=8,
+                       textColor=colors.HexColor("#5f6b7a"))))
 
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     story.append(Spacer(1, 6))
