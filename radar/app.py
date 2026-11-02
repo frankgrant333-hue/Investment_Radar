@@ -89,6 +89,7 @@ from radar.lookup import lookup_ticker
 from radar.fundamentals import fetch_fundamentals
 from radar.technicals import fetch_history, compute_technicals, fetch_histories_batch
 from radar.nash import pct_off_52wk_high, dca_state, spy_too_hot, fmt_pct_off
+from radar.stage import weinstein_stage, market_posture, posture_line
 from radar.snapshots import take_snapshot, list_snapshots, load_snapshot
 from radar.latest_metrics import (
     write_latest_metrics, read_latest_metrics, metrics_for_symbol,
@@ -203,6 +204,29 @@ st.caption(
     "Quality + Momentum picks (Value ≥ 70 AND Tech ≥ 70), and "
     "snapshots let you look back at past readings._"
 )
+
+# --- 2b. Market posture banner (Phase 3) -----------------------------
+# RISK-ON / CAUTION / CASH from SPY + QQQ vs their 50d/200d SMAs.
+# Mac: computed live from the same cached Yahoo history the scores
+# use. Phone: read from latest_metrics.csv (written on the Mac) —
+# the same Mac→Cloud bridge as the scores. Advice text only.
+if IS_HOSTED:
+    _pm_df = read_latest_metrics()
+    _posture_text = ""
+    if not _pm_df.empty and "market_posture" in _pm_df.columns:
+        _vals = [str(v).strip() for v in _pm_df["market_posture"].tolist()
+                 if str(v).strip()]
+        _posture_text = _vals[0] if _vals else ""
+else:
+    _posture_text = posture_line(
+        market_posture(cached_history("SPY"), cached_history("QQQ")))
+_posture_label = _posture_text.split(" — ")[0] if _posture_text else ""
+if _posture_label == "RISK-ON":
+    st.success(f"🧭 MARKET POSTURE: {_posture_text}")
+elif _posture_label == "CASH":
+    st.error(f"🧭 MARKET POSTURE: {_posture_text}")
+elif _posture_label:
+    st.warning(f"🧭 MARKET POSTURE: {_posture_text}")
 
 
 # --- 3. Helper: save a new row back to ideas.csv ---------------------
@@ -496,6 +520,7 @@ if len(ideas) > 0:
     c_numeric = []   # hidden float column for sorting (strings sort wrong)
     cur_prices, past_prices = [], []   # display-only price columns
     off_high_strs, dca_states = [], []  # Nash Dip Meter (Phase 2)
+    stage_strs = []  # Weinstein stage (Phase 3)
     qm_stars = []    # ⭐ when both value ≥ 70 AND tech ≥ 70 (Phase 4.3)
     qm_flags = []    # hidden boolean column for filtering
     metrics_last_computed_at = ""   # populated on hosted view for the "last synced" caption
@@ -521,6 +546,7 @@ if len(ideas) > 0:
                 c_numeric.append(float("-inf"))
                 cur_prices.append("N/A"); past_prices.append("N/A")
                 off_high_strs.append("N/A"); dca_states.append("")
+                stage_strs.append("n/a")
                 qm_stars.append(""); qm_flags.append(False)
                 continue
             v_score = value_score({
@@ -550,6 +576,7 @@ if len(ideas) > 0:
             # just display them (same bridge as the scores above).
             off_high_strs.append(fmt_pct_off(m.get("pct_off_52wk_high")))
             dca_states.append(m.get("dca_state") or "")
+            stage_strs.append(m.get("stage") or "n/a")
             qm_hit = (
                 v_score is not None and v_score >= 70 and
                 t_score is not None and t_score >= 70
@@ -614,6 +641,9 @@ if len(ideas) > 0:
                 _state = dca_state(_pct_off, row["symbol"], _market_hot)
                 off_high_strs.append(fmt_pct_off(_pct_off))
                 dca_states.append(_state)
+                # Weinstein stage (Phase 3) — display label only.
+                _stage = weinstein_stage(history)
+                stage_strs.append(_stage["short"] if _stage else "n/a")
 
                 funds_raw = cached_fundamentals(row["symbol"], row["asset_type"])
                 metrics_buffer.append({
@@ -631,6 +661,8 @@ if len(ideas) > 0:
                     "atr_pct":            tech_raw.get("atr_pct"),
                     "pct_off_52wk_high":  _pct_off,
                     "dca_state":          _state,
+                    "stage":              _stage["short"] if _stage else "",
+                    "market_posture":     _posture_text,
                 })
         # After the loop: persist the metrics so the phone view can read
         # them once Frank pushes to GitHub. Non-fatal if it fails.
@@ -641,6 +673,8 @@ if len(ideas) > 0:
     ideas["qm"]               = qm_stars
     ideas["pct_off_high"]     = off_high_strs
     ideas["dca_state"]        = dca_states
+    ideas["stage"]            = stage_strs
+    ideas["market_posture"]   = _posture_text
     ideas["current_price"]    = cur_prices
     ideas["past_30d_price"]   = past_prices
     ideas["composite_score"]  = c_scores
@@ -848,7 +882,7 @@ else:
             "qm",
             # Prices next — left edge, before the symbol.
             "current_price", "past_30d_price",
-            "pct_off_high", "dca_state",
+            "pct_off_high", "dca_state", "stage",
             "symbol",
             "composite_score", "composite_grade",
             "value_score", "value_grade",
@@ -902,6 +936,17 @@ else:
                      "20%+ off its high. TOO HOT — SLOW DOWN: SPY up "
                      "20%+ in 30 days (outranks a stock dip). Blank: "
                      "no quality score for this name.",
+            ),
+            # --- Weinstein stage (Phase 3) --------------------------
+            "stage": st.column_config.TextColumn(
+                "stage",
+                disabled=True,
+                help="Weinstein stage: price vs its 150-day average "
+                     "and that average's 15-day slope. Stage 2 = "
+                     "advancing uptrend, Stage 3 = topping, Stage 4 = "
+                     "declining, Stage 1 = basing. n/a = under ~170 "
+                     "days of history. Display only — scores "
+                     "unchanged.",
             ),
             # --- Yahoo-derived columns (unlockable via Edit toggle) -
             # symbol stays locked always — it's the row's identity.
@@ -1306,6 +1351,7 @@ else:
             col_d.metric("% off 52-wk high", row["pct_off_high"])
             if row["dca_state"]:
                 st.markdown(f"**DCA state (Nash):** {row['dca_state']}")
+            st.markdown(f"**Weinstein stage:** {row['stage']}")
 
 
     # --- 7. Past snapshots viewer (Phase 4.4b) ---------------------

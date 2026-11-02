@@ -209,6 +209,36 @@ def build_pdf(target) -> None:
     story.append(Paragraph(
         f"{today} &nbsp;•&nbsp; {len(df)} tickers on the radar", h_sub))
 
+    # ---- Market posture banner (Phase 3) ----
+    # Read from latest_metrics.csv (written on the Mac) — the PDF
+    # builds offline, same as the scores. Advice text only.
+    _pm = read_latest_metrics()
+    _posture_text = ""
+    if not _pm.empty and "market_posture" in _pm.columns:
+        _vals = [str(v).strip() for v in _pm["market_posture"].tolist()
+                 if str(v).strip()]
+        _posture_text = _vals[0] if _vals else ""
+    if _posture_text:
+        _label = _posture_text.split(" — ")[0]
+        _band_color = {
+            "RISK-ON": colors.HexColor("#1e8e3e"),
+            "CASH": colors.HexColor("#c62828"),
+        }.get(_label, colors.HexColor("#ef6c00"))
+        _h_posture = ParagraphStyle(
+            "RPosture", parent=styles["Normal"], fontSize=10.5,
+            textColor=colors.white, alignment=TA_CENTER,
+            fontName="Helvetica-Bold")
+        _band = Table(
+            [[Paragraph(f"MARKET POSTURE: {_posture_text}", _h_posture)]],
+            colWidths=[7.3 * inch])
+        _band.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), _band_color),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(_band)
+        story.append(Spacer(1, 10))
+
     # ---- Section 1: Top 10 picks ----
     story.append(Paragraph("Top 10 Picks — Grades A / B / C", h_section))
     story.append(Paragraph(

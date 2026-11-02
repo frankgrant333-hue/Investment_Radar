@@ -33,6 +33,7 @@ from radar.scoring import (
 )
 from radar.snapshots import take_snapshot
 from radar.nash import pct_off_52wk_high, dca_state, spy_too_hot, fmt_pct_off
+from radar.stage import weinstein_stage, market_posture, posture_line
 
 
 def _format_price(close: float | None) -> str:
@@ -61,6 +62,12 @@ def enrich_and_snapshot() -> None:
     # Nash market check (Phase 2): TOO HOT outranks stock-level DIP.
     market_hot = spy_too_hot(spy_history)
 
+    # Vermeulen posture (Phase 3): needs QQQ history too.
+    print("\nFetching QQQ for the market posture…")
+    qqq_history = fetch_history("QQQ")
+    posture_text = posture_line(market_posture(spy_history, qqq_history))
+    print(f"  MARKET POSTURE: {posture_text}")
+
     # Buffers — one entry per ticker, in row order.
     cur_prices, past_prices = [], []
     v_scores_d, v_grades_d = [], []
@@ -68,6 +75,7 @@ def enrich_and_snapshot() -> None:
     c_scores_d, c_grades_d = [], []
     qm_stars = []
     off_highs, dca_states = [], []   # Nash Dip Meter (Phase 2)
+    stage_strs = []                  # Weinstein stage (Phase 3)
 
     print("\nScoring each ticker:")
     for _, row in ideas.iterrows():
@@ -99,6 +107,8 @@ def enrich_and_snapshot() -> None:
         pct_off = pct_off_52wk_high(history)
         off_highs.append(fmt_pct_off(pct_off))
         dca_states.append(dca_state(pct_off, symbol, market_hot))
+        _stage = weinstein_stage(history)
+        stage_strs.append(_stage["short"] if _stage else "n/a")
 
         # ---- Composite + Q+M ----
         c_s = composite_score(v_s, t_s)
@@ -128,6 +138,8 @@ def enrich_and_snapshot() -> None:
     ideas["past_30d_price"]  = past_prices
     ideas["pct_off_high"]    = off_highs
     ideas["dca_state"]       = dca_states
+    ideas["stage"]           = stage_strs
+    ideas["market_posture"]  = posture_text
     ideas["qm"]              = qm_stars
     ideas["composite_score"] = c_scores_d
     ideas["composite_grade"] = c_grades_d

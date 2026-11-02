@@ -60,6 +60,9 @@ METRICS_COLUMNS = [
     # as-is on the hosted phone view (no Yahoo calls there).
     "pct_off_52wk_high",   # float, % below 52-wk high (always <= 0)
     "dca_state",           # "" / NORMAL / DIP — ACCELERATE / TOO HOT — SLOW DOWN
+    # Weinstein stage + Vermeulen posture (Phase 3) — display labels
+    "stage",               # "Stage 1".."Stage 4", or "" (short history)
+    "market_posture",      # full posture banner text (same every row)
 ]
 
 
@@ -157,4 +160,7 @@ def metrics_for_symbol(df: pd.DataFrame, symbol: str) -> Optional[dict]:
         # Nash Dip Meter (Phase 2)
         "pct_off_52wk_high":  _parse_optional_float(row.get("pct_off_52wk_high")),
         "dca_state":          str(row.get("dca_state") or "").strip(),
+        # Weinstein stage + posture (Phase 3)
+        "stage":              str(row.get("stage") or "").strip(),
+        "market_posture":     str(row.get("market_posture") or "").strip(),
     }
